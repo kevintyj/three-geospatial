@@ -27,7 +27,7 @@ export const Basic = createStory(BasicStory, {
   props: {
     longitude: 138.5,
     latitude: 36.2,
-    height: 1000,
+    height: 1200,
     heading: -90,
     pitch: -20,
     distance: 3000
@@ -45,7 +45,7 @@ export const ShadowLength = createStory(ShadowLengthStory, {
   props: {
     longitude: 138.5,
     latitude: 36.2,
-    height: 1000,
+    height: 1200,
     heading: -90,
     pitch: -20,
     distance: 3000
@@ -59,21 +59,11 @@ export const ShadowLength = createStory(ShadowLengthStory, {
   }
 })
 
-export const WorldOriginRebasing = createStory(WorldOriginRebasingStory, {
-  parameters: {
-    docs: {
-      source: {
-        code: WorldOriginRebasingCode
-      }
-    }
-  }
-})
-
 export const Backdrop = createStory(BackdropStory, {
   props: {
     longitude: 138.5,
     latitude: 36.2,
-    height: 1000,
+    height: 1200,
     heading: -90,
     pitch: -20,
     distance: 3000
@@ -82,6 +72,16 @@ export const Backdrop = createStory(BackdropStory, {
     docs: {
       source: {
         code: BackdropCode
+      }
+    }
+  }
+})
+
+export const WorldOriginRebasing = createStory(WorldOriginRebasingStory, {
+  parameters: {
+    docs: {
+      source: {
+        code: WorldOriginRebasingCode
       }
     }
   }

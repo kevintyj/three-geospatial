@@ -1,10 +1,20 @@
+import { Sphere } from '@react-three/drei'
 import { extend, useThree, type ThreeElement } from '@react-three/fiber'
 import { TilesPlugin, TilesRenderer } from '3d-tiles-renderer/r3f'
-import { useLayoutEffect, useMemo, type FC } from 'react'
+import { useLayoutEffect, useMemo, useState, type FC } from 'react'
 import { AgXToneMapping, Scene } from 'three'
-import { context, mrt, output, pass, toneMapping, uniform } from 'three/tsl'
+import {
+  context,
+  float,
+  mrt,
+  output,
+  pass,
+  toneMapping,
+  uniform
+} from 'three/tsl'
 import {
   MeshLambertNodeMaterial,
+  MeshPhysicalNodeMaterial,
   RenderPipeline,
   type Renderer
 } from 'three/webgpu'
@@ -16,11 +26,14 @@ import {
 } from '@takram/three-atmosphere'
 import {
   aerialPerspective,
+  aerialPerspectiveBackdrop,
   AtmosphereContext,
   AtmosphereLight,
   AtmosphereLightNode,
   AtmosphereParameters
 } from '@takram/three-atmosphere/webgpu'
+import { radians } from '@takram/three-geospatial'
+import { EastNorthUpFrame } from '@takram/three-geospatial/r3f'
 import {
   dithering,
   highpVelocity,
@@ -106,6 +119,21 @@ const Content: FC<StoryProps> = ({
     })
   }, [renderer, atmosphereContext])
 
+  const backdropNode = useResource(() => aerialPerspectiveBackdrop(), [])
+
+  const material = useResource(
+    () =>
+      new MeshPhysicalNodeMaterial({
+        roughness: 1,
+        metalness: 0,
+        clearcoatRoughness: 0,
+        clearcoat: 1,
+        backdropNode,
+        backdropAlphaNode: float(1)
+      }),
+    [backdropNode]
+  )
+
   // Post-processing:
 
   const passNode = useResource(
@@ -183,6 +211,11 @@ const Content: FC<StoryProps> = ({
       atmosphereContext.showGround = showGround
       atmosphereContext.raymarchScattering = raymarchScattering
       renderPipeline.needsUpdate = true
+
+      backdropNode.transmittance = transmittance
+      backdropNode.inscattering = inscattering
+      backdropNode.needsUpdate = true
+      material.needsUpdate = true
     }
   )
 
@@ -225,25 +258,40 @@ const Content: FC<StoryProps> = ({
     )
   })
 
+  const [tilesScene, setTilesScene] = useState<Scene | null>(null)
+
   return (
     <>
       <atmosphereLight />
-      <GlobeControls enableDamping overlayScene={overlayScene} />
-      <TilesRenderer>
-        <TilesPlugin
-          plugin={CesiumIonTerrainPlugin}
-          args={{
-            apiToken: PLATEAU_TERRAIN_API_TOKEN,
-            assetId: 3258112, // PLATEAU terrain dataset
-            autoRefreshToken: true
-          }}
+      <EastNorthUpFrame
+        longitude={radians(longitude)}
+        latitude={radians(latitude)}
+        height={1200}
+      >
+        <Sphere args={[600, 360, 180]} material={material} />
+      </EastNorthUpFrame>
+      <scene ref={setTilesScene}>
+        <GlobeControls
+          enableDamping
+          scene={tilesScene}
+          overlayScene={overlayScene}
         />
-        <TilesPlugin
-          plugin={TileMaterialReplacementPlugin}
-          args={() => new MeshLambertNodeMaterial()}
-        />
-        <TilesPlugin plugin={TilesFadePlugin} />
-      </TilesRenderer>
+        <TilesRenderer>
+          <TilesPlugin
+            plugin={CesiumIonTerrainPlugin}
+            args={{
+              apiToken: PLATEAU_TERRAIN_API_TOKEN,
+              assetId: 3258112, // PLATEAU terrain dataset
+              autoRefreshToken: true
+            }}
+          />
+          <TilesPlugin
+            plugin={TileMaterialReplacementPlugin}
+            args={() => new MeshLambertNodeMaterial()}
+          />
+          <TilesPlugin plugin={TilesFadePlugin} />
+        </TilesRenderer>
+      </scene>
     </>
   )
 }
