@@ -185,13 +185,7 @@ const Content: FC<StoryProps> = ({
   )
 
   const aerialNode = useResource(
-    () =>
-      aerialPerspective(
-        colorNode.mul(2 / 3),
-        depthNode,
-        null,
-        shadowLengthNode
-      ),
+    () => aerialPerspective(colorNode.mul(2 / 3), depthNode, shadowLengthNode),
     [colorNode, depthNode, shadowLengthNode]
   )
 

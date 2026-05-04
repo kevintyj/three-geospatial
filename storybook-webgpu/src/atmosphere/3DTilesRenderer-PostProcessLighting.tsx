@@ -115,10 +115,12 @@ const Content: FC<StoryProps> = ({
   const normalNode = passNode.getTextureNode('normal')
   const velocityNode = passNode.getTextureNode('velocity')
 
-  const aerialNode = useResource(
-    () => aerialPerspective(colorNode.mul(2 / 3), depthNode, normalNode),
-    [colorNode, depthNode, normalNode]
-  )
+  const aerialNode = useResource(() => {
+    const aerialNode = aerialPerspective(colorNode.mul(2 / 3), depthNode)
+    aerialNode.normalNode = normalNode
+    aerialNode.lighting = true
+    return aerialNode
+  }, [colorNode, depthNode, normalNode])
 
   const lensFlareNode = useResource(() => lensFlare(aerialNode), [aerialNode])
 
