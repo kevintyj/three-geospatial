@@ -3,11 +3,13 @@ import type { Meta } from '@storybook/react-vite'
 import { createStory } from '../components/createStory'
 import { Story as BasicStory } from './Sky-Basic'
 import { Story as MoonStory } from './Sky-Moon'
+import { Story as ObjectBackdropStory } from './Sky-ObjectBackdrop'
 import { Story as SceneBackgroundStory } from './Sky-SceneBackground'
 import { Story as StarsStory } from './Sky-Stars'
 
 import BasicCode from './Sky-Basic?raw'
 import MoonCode from './Sky-Moon?raw'
+import ObjectBackdropCode from './Sky-ObjectBackdrop?raw'
 import SceneBackgroundCode from './Sky-SceneBackground?raw'
 import StarsCode from './Sky-Stars?raw'
 
@@ -38,6 +40,16 @@ export const SceneBackground = createStory(SceneBackgroundStory, {
     docs: {
       source: {
         code: SceneBackgroundCode
+      }
+    }
+  }
+})
+
+export const ObjectBackdrop = createStory(ObjectBackdropStory, {
+  parameters: {
+    docs: {
+      source: {
+        code: ObjectBackdropCode
       }
     }
   }

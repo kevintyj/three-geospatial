@@ -1,0 +1,228 @@
+import { Box, OrbitControls } from '@react-three/drei'
+import { extend, useThree, type ThreeElement } from '@react-three/fiber'
+import { useLayoutEffect, type FC } from 'react'
+import { context, float, pass, toneMapping, uniform } from 'three/tsl'
+import {
+  AgXToneMapping,
+  DoubleSide,
+  MeshPhysicalNodeMaterial,
+  RenderPipeline,
+  type Renderer
+} from 'three/webgpu'
+
+import {
+  getECIToECEFRotationMatrix,
+  getMoonDirectionECI,
+  getSunDirectionECI
+} from '@takram/three-atmosphere'
+import {
+  AtmosphereContext,
+  AtmosphereLight,
+  AtmosphereLightNode,
+  skyBackdrop
+} from '@takram/three-atmosphere/webgpu'
+import { dithering, lensFlare } from '@takram/three-geospatial/webgpu'
+
+import type { StoryFC } from '../components/createStory'
+import { Description } from '../components/Description'
+import { WebGPUCanvas } from '../components/WebGPUCanvas'
+import {
+  localDateArgs,
+  localDateArgTypes,
+  useLocalDateControls,
+  type LocalDateArgs
+} from '../controls/localDateControls'
+import {
+  locationArgs,
+  locationArgTypes,
+  useLocationControls,
+  type LocationArgs
+} from '../controls/locationControls'
+import { rendererArgs, rendererArgTypes } from '../controls/rendererControls'
+import {
+  toneMappingArgs,
+  toneMappingArgTypes,
+  useToneMappingControls,
+  type ToneMappingArgs
+} from '../controls/toneMappingControls'
+import { useGuardedFrame } from '../hooks/useGuardedFrame'
+import { useResource } from '../hooks/useResource'
+import { useTransientControl } from '../hooks/useTransientControl'
+
+declare module '@react-three/fiber' {
+  interface ThreeElements {
+    atmosphereLight: ThreeElement<typeof AtmosphereLight>
+  }
+}
+
+extend({ AtmosphereLight })
+
+const Content: FC<StoryProps> = () => {
+  const renderer = useThree<Renderer>(({ gl }) => gl as any)
+  const scene = useThree(({ scene }) => scene)
+  const camera = useThree(({ camera }) => camera)
+
+  const atmosphereContext = useResource(() => new AtmosphereContext(), [])
+  atmosphereContext.camera = camera
+
+  useLayoutEffect(() => {
+    renderer.contextNode = context({
+      ...renderer.contextNode.value,
+      getAtmosphere: () => atmosphereContext
+    })
+  }, [renderer, atmosphereContext])
+
+  const backdropNode = useResource(() => {
+    const skyNode = skyBackdrop()
+    skyNode.moonNode.intensity.value = 10
+    return skyNode
+  }, [])
+
+  const material = useResource(
+    () =>
+      new MeshPhysicalNodeMaterial({
+        backdropNode,
+        backdropAlphaNode: float(0.5),
+        side: DoubleSide
+      }),
+    [backdropNode]
+  )
+
+  // Post-processing:
+
+  const passNode = useResource(
+    () => pass(scene, camera, { samples: 0 }),
+    [scene, camera]
+  )
+
+  const lensFlareNode = useResource(() => lensFlare(passNode), [passNode])
+
+  const toneMappingNode = useResource(
+    () => toneMapping(AgXToneMapping, uniform(0), lensFlareNode),
+    [lensFlareNode]
+  )
+
+  const renderPipeline = useResource(
+    () => new RenderPipeline(renderer, toneMappingNode.add(dithering)),
+    [renderer, toneMappingNode]
+  )
+
+  useGuardedFrame(() => {
+    renderPipeline.render()
+  }, 1)
+
+  useTransientControl(
+    ({ showSun, showMoon }: StoryArgs) => ({
+      showSun,
+      showMoon
+    }),
+    options => {
+      Object.assign(backdropNode, options)
+      backdropNode.needsUpdate = true
+      material.needsUpdate = true
+    }
+  )
+
+  useTransientControl(
+    ({ showGround }: StoryArgs) => ({
+      showGround
+    }),
+    ({ showGround }) => {
+      atmosphereContext.showGround = showGround
+      backdropNode.needsUpdate = true
+      material.needsUpdate = true
+    }
+  )
+
+  // Tone mapping controls:
+  useToneMappingControls(toneMappingNode, () => {
+    renderPipeline.needsUpdate = true
+  })
+
+  // Location controls:
+  useLocationControls(atmosphereContext.matrixWorldToECEF.value)
+
+  // Local date controls (depends on the longitude of the location):
+  useLocalDateControls(date => {
+    const { matrixECIToECEF, sunDirectionECEF, moonDirectionECEF } =
+      atmosphereContext
+    getECIToECEFRotationMatrix(date, matrixECIToECEF.value)
+    getSunDirectionECI(date, sunDirectionECEF.value).applyMatrix4(
+      matrixECIToECEF.value
+    )
+    getMoonDirectionECI(date, moonDirectionECEF.value).applyMatrix4(
+      matrixECIToECEF.value
+    )
+  })
+
+  return (
+    <>
+      <atmosphereLight />
+      <OrbitControls minDistance={0} />
+      <Box args={[2, 2, 2]} material={material} />
+    </>
+  )
+}
+
+interface StoryProps {}
+
+interface StoryArgs extends ToneMappingArgs, LocationArgs, LocalDateArgs {
+  showSun: boolean
+  showMoon: boolean
+  showGround: boolean
+}
+
+export const Story: StoryFC<StoryProps, StoryArgs> = props => (
+  <WebGPUCanvas
+    camera={{ position: [1, 0, 0] }}
+    renderer={{
+      onInit: renderer => {
+        renderer.library.addLight(AtmosphereLightNode, AtmosphereLight)
+      }
+    }}
+  >
+    <Content {...props} />
+    <Description />
+  </WebGPUCanvas>
+)
+
+Story.args = {
+  showSun: true,
+  showMoon: true,
+  showGround: true,
+  ...localDateArgs({
+    dayOfYear: 0,
+    timeOfDay: 9
+  }),
+  ...locationArgs({
+    longitude: 30,
+    latitude: 35,
+    height: 300
+  }),
+  ...toneMappingArgs({
+    toneMappingExposure: 10
+  }),
+  ...rendererArgs()
+}
+
+Story.argTypes = {
+  showSun: {
+    control: {
+      type: 'boolean'
+    }
+  },
+  showMoon: {
+    control: {
+      type: 'boolean'
+    }
+  },
+  showGround: {
+    control: {
+      type: 'boolean'
+    }
+  },
+  ...localDateArgTypes(),
+  ...locationArgTypes(),
+  ...toneMappingArgTypes(),
+  ...rendererArgTypes()
+}
