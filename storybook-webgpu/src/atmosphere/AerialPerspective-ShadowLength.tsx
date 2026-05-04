@@ -348,7 +348,7 @@ const Content: FC<StoryProps> = ({
       <EastNorthUpFrame
         longitude={radians(longitude)}
         latitude={radians(latitude)}
-        height={1000}
+        height={1200}
       >
         <Box
           args={[1000, 1000, 1000]}

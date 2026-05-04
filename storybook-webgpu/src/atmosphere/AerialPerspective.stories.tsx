@@ -1,10 +1,12 @@
 import type { Meta } from '@storybook/react-vite'
 
 import { createStory } from '../components/createStory'
+import { Story as BackdropStory } from './AerialPerspective-Backdrop'
 import { Story as BasicStory } from './AerialPerspective-Basic'
 import { Story as ShadowLengthStory } from './AerialPerspective-ShadowLength'
 import { Story as WorldOriginRebasingStory } from './AerialPerspective-WorldOriginRebasing'
 
+import BackdropCode from './AerialPerspective-Backdrop?raw'
 import BasicCode from './AerialPerspective-Basic?raw'
 import ShadowLengthCode from './AerialPerspective-ShadowLength?raw'
 import WorldOriginRebasingCode from './AerialPerspective-WorldOriginRebasing?raw'
@@ -25,7 +27,7 @@ export const Basic = createStory(BasicStory, {
   props: {
     longitude: 138.5,
     latitude: 36.2,
-    height: 1000,
+    height: 1200,
     heading: -90,
     pitch: -20,
     distance: 3000
@@ -43,7 +45,7 @@ export const ShadowLength = createStory(ShadowLengthStory, {
   props: {
     longitude: 138.5,
     latitude: 36.2,
-    height: 1000,
+    height: 1200,
     heading: -90,
     pitch: -20,
     distance: 3000
@@ -52,6 +54,24 @@ export const ShadowLength = createStory(ShadowLengthStory, {
     docs: {
       source: {
         code: ShadowLengthCode
+      }
+    }
+  }
+})
+
+export const Backdrop = createStory(BackdropStory, {
+  props: {
+    longitude: 138.5,
+    latitude: 36.2,
+    height: 1200,
+    heading: -90,
+    pitch: -20,
+    distance: 3000
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: BackdropCode
       }
     }
   }

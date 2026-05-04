@@ -1,16 +1,11 @@
-import {
-  extend,
-  useFrame,
-  useThree,
-  type ThreeElement
-} from '@react-three/fiber'
-import type { TilesRenderer } from '3d-tiles-renderer'
-import { TilesPlugin } from '3d-tiles-renderer/r3f'
-import { useEffect, useLayoutEffect, useMemo, useRef, type FC } from 'react'
+import { Sphere } from '@react-three/drei'
+import { extend, useThree, type ThreeElement } from '@react-three/fiber'
+import { TilesPlugin, TilesRenderer } from '3d-tiles-renderer/r3f'
+import { useLayoutEffect, useMemo, useState, type FC } from 'react'
 import { AgXToneMapping, Scene } from 'three'
 import {
-  bool,
   context,
+  float,
   mrt,
   output,
   pass,
@@ -19,10 +14,10 @@ import {
 } from 'three/tsl'
 import {
   MeshLambertNodeMaterial,
+  MeshPhysicalNodeMaterial,
   RenderPipeline,
   type Renderer
 } from 'three/webgpu'
-import invariant from 'tiny-invariant'
 
 import {
   getECIToECEFRotationMatrix,
@@ -31,28 +26,26 @@ import {
 } from '@takram/three-atmosphere'
 import {
   aerialPerspective,
+  aerialPerspectiveBackdrop,
   AtmosphereContext,
   AtmosphereLight,
   AtmosphereLightNode,
-  AtmosphereParameters,
-  shadowLength,
-  viewZUnit,
-  type SkyNode
+  AtmosphereParameters
 } from '@takram/three-atmosphere/webgpu'
+import { radians } from '@takram/three-geospatial'
+import { EastNorthUpFrame } from '@takram/three-geospatial/r3f'
 import {
-  CascadedShadowMapsNode,
   dithering,
   highpVelocity,
   lensFlare,
-  temporalAntialias,
-  type Node
+  temporalAntialias
 } from '@takram/three-geospatial/webgpu'
 
 import type { StoryFC } from '../components/createStory'
-import { Description, TilesAttribution } from '../components/Description'
-import { Globe } from '../components/Globe'
+import { Description } from '../components/Description'
 import { GlobeControls } from '../components/GlobeControls'
 import { WebGPUCanvas } from '../components/WebGPUCanvas'
+import { PLATEAU_TERRAIN_API_TOKEN } from '../constants'
 import {
   atmosphereArgs,
   atmosphereArgTypes,
@@ -72,11 +65,6 @@ import {
 } from '../controls/outputPassControls'
 import { rendererArgs, rendererArgTypes } from '../controls/rendererControls'
 import {
-  shadowLengthArgs,
-  shadowLengthArgTypes,
-  type ShadowLengthArgs
-} from '../controls/shadowLengthControls'
-import {
   toneMappingArgs,
   toneMappingArgTypes,
   useToneMappingControls,
@@ -87,7 +75,9 @@ import { useGuardedFrame } from '../hooks/useGuardedFrame'
 import { usePointOfView, type PointOfViewProps } from '../hooks/usePointOfView'
 import { useResource } from '../hooks/useResource'
 import { useTransientControl } from '../hooks/useTransientControl'
-import { TileMeshPropsPlugin } from '../plugins/TileMeshPropsPlugin'
+import { CesiumIonTerrainPlugin } from '../plugins/CesiumIonTerrainPlugin'
+import { TilesFadePlugin } from '../plugins/fade/TilesFadePlugin'
+import { TileMaterialReplacementPlugin } from '../plugins/TileMaterialReplacementPlugin'
 
 declare module '@react-three/fiber' {
   interface ThreeElements {
@@ -103,8 +93,7 @@ const Content: FC<StoryProps> = ({
   height,
   heading,
   pitch,
-  distance,
-  csmFar: shadowFar
+  distance
 }) => {
   const renderer = useThree<Renderer>(({ gl }) => gl as any)
   const scene = useThree(({ scene }) => scene)
@@ -115,15 +104,11 @@ const Content: FC<StoryProps> = ({
     ({ higherOrderScatteringTexture }: StoryArgs) =>
       higherOrderScatteringTexture
   )
-  const atmosphereParameters = useMemo(() => {
+  const atmosphereContext = useResource(() => {
     const parameters = new AtmosphereParameters()
     parameters.higherOrderScatteringTexture = higherOrderScatteringTexture
-    return parameters
+    return new AtmosphereContext(parameters)
   }, [higherOrderScatteringTexture])
-  const atmosphereContext = useResource(
-    () => new AtmosphereContext(atmosphereParameters),
-    [atmosphereParameters]
-  )
 
   atmosphereContext.camera = camera
 
@@ -134,29 +119,20 @@ const Content: FC<StoryProps> = ({
     })
   }, [renderer, atmosphereContext])
 
-  const [light, csmShadowNode] = useMemo(() => {
-    const light = new AtmosphereLight()
-    light.castShadow = true
-    light.shadow.mapSize.width = 1024
-    light.shadow.mapSize.height = 1024
-    light.shadow.camera.near = 0
-    light.shadow.camera.far = shadowFar * 4
+  const backdropNode = useResource(() => aerialPerspectiveBackdrop(), [])
 
-    const csmShadowNode = new CascadedShadowMapsNode(light)
-    csmShadowNode.cascades = 3
-    csmShadowNode.maxFar = shadowFar
-    csmShadowNode.fade = true
-    csmShadowNode.lightMargin = shadowFar * 2
-    light.shadow.shadowNode = csmShadowNode // CSMShadowNode is disposed by DirectionalLight's dispose
-
-    return [light, csmShadowNode]
-  }, [shadowFar])
-
-  useEffect(() => {
-    return () => {
-      light.dispose()
-    }
-  }, [light])
+  const material = useResource(
+    () =>
+      new MeshPhysicalNodeMaterial({
+        roughness: 1,
+        metalness: 0,
+        clearcoatRoughness: 0,
+        clearcoat: 1,
+        backdropNode,
+        backdropAlphaNode: float(1)
+      }),
+    [backdropNode]
+  )
 
   // Post-processing:
 
@@ -165,8 +141,7 @@ const Content: FC<StoryProps> = ({
       pass(scene, camera, { samples: 0 }).setMRT(
         mrt({
           output,
-          velocity: highpVelocity,
-          viewZUnit
+          velocity: highpVelocity
         })
       ),
     [scene, camera]
@@ -175,18 +150,10 @@ const Content: FC<StoryProps> = ({
   const colorNode = passNode.getTextureNode('output')
   const depthNode = passNode.getTextureNode('depth')
   const velocityNode = passNode.getTextureNode('velocity')
-  const viewZUnitNode = passNode.getTextureNode('viewZUnit')
-
-  // Note that the shadow length is computed against the depths jittered by TAA,
-  // causing temporal instability. But in practice, this is not noticeable.
-  const shadowLengthNode = useResource(
-    () => shadowLength(csmShadowNode, viewZUnitNode),
-    [csmShadowNode, viewZUnitNode]
-  )
 
   const aerialNode = useResource(
-    () => aerialPerspective(colorNode.mul(2 / 3), depthNode, shadowLengthNode),
-    [colorNode, depthNode, shadowLengthNode]
+    () => aerialPerspective(colorNode, depthNode),
+    [colorNode, depthNode]
   )
 
   const lensFlareNode = useResource(() => lensFlare(aerialNode), [aerialNode])
@@ -210,44 +177,16 @@ const Content: FC<StoryProps> = ({
     [camera, overlayScene]
   )
 
-  const displayShadowLength = useControl(
-    ({ shadowLength, displayShadowLength }: StoryArgs) =>
-      shadowLength && displayShadowLength
-  )
-
-  const renderPipeline = useResource(() => {
-    let outputNode: Node = taaNode
-      .add(dithering)
-      .mul(overlayPassNode.a.oneMinus())
-      .add(overlayPassNode)
-
-    // Useless conditionals to keep the main path in the graph:
-    if (displayShadowLength) {
-      outputNode = bool(true).select(
-        shadowLengthNode.xxx
-          .mul(1 / atmosphereContext.parameters.worldToUnit)
-          .mul(0.0001), // 1 = 10 km
-        outputNode
-      )
-    }
-    return new RenderPipeline(renderer, outputNode)
-  }, [
-    renderer,
-    atmosphereContext,
-    shadowLengthNode,
-    taaNode,
-    overlayPassNode,
-    displayShadowLength
-  ])
-
-  useTransientControl(
-    ({ shadowLength }: StoryArgs) => shadowLength,
-    value => {
-      aerialNode.shadowLengthNode = value ? shadowLengthNode : null
-      const skyNode = aerialNode.skyNode as SkyNode
-      skyNode.shadowLengthNode = value ? shadowLengthNode : null
-      renderPipeline.needsUpdate = true
-    }
+  const renderPipeline = useResource(
+    () =>
+      new RenderPipeline(
+        renderer,
+        taaNode
+          .add(dithering)
+          .mul(overlayPassNode.a.oneMinus())
+          .add(overlayPassNode)
+      ),
+    [renderer, taaNode, overlayPassNode]
   )
 
   useGuardedFrame(() => {
@@ -272,6 +211,11 @@ const Content: FC<StoryProps> = ({
       atmosphereContext.showGround = showGround
       atmosphereContext.raymarchScattering = raymarchScattering
       renderPipeline.needsUpdate = true
+
+      backdropNode.transmittance = transmittance
+      backdropNode.inscattering = inscattering
+      backdropNode.needsUpdate = true
+      material.needsUpdate = true
     }
   )
 
@@ -314,63 +258,51 @@ const Content: FC<StoryProps> = ({
     )
   })
 
-  // Make tiles outside the camera frustum but inside the shadow camera
-  // frustum active. Note that doing this every frame is inefficient, but it's
-  // hard to choose the right timing when the CSM allocates shadow cameras.
-  const tilesRef = useRef<TilesRenderer | null>(null)
-  useFrame(() => {
-    const tiles = tilesRef.current
-    if (tiles != null && csmShadowNode.lights.length > 0) {
-      const { lights } = csmShadowNode
-      const lastLight = lights[lights.length - 1]
-      invariant(lastLight.shadow != null)
-      tiles.setCamera(lastLight.shadow.camera)
-      tiles.setResolution(lastLight.shadow.camera, lastLight.shadow.mapSize)
-    }
-  })
-
-  // Google Maps API key:
-  const apiKey = useControl(({ googleMapsApiKey }: StoryArgs) =>
-    googleMapsApiKey !== '' ? googleMapsApiKey : undefined
-  )
+  const [tilesScene, setTilesScene] = useState<Scene | null>(null)
 
   return (
     <>
-      <primitive object={light} />
-      <Globe
-        ref={tilesRef}
-        apiKey={apiKey}
-        materialHandler={() => new MeshLambertNodeMaterial()}
+      <atmosphereLight />
+      <EastNorthUpFrame
+        longitude={radians(longitude)}
+        latitude={radians(latitude)}
+        height={1200}
       >
-        <GlobeControls enableDamping overlayScene={overlayScene} />
-        <TilesPlugin
-          plugin={TileMeshPropsPlugin}
-          args={{ castShadow: true, receiveShadow: true }}
+        <Sphere args={[600, 360, 180]} material={material} />
+      </EastNorthUpFrame>
+      <scene ref={setTilesScene}>
+        <GlobeControls
+          enableDamping
+          scene={tilesScene}
+          overlayScene={overlayScene}
         />
-      </Globe>
+        <TilesRenderer>
+          <TilesPlugin
+            plugin={CesiumIonTerrainPlugin}
+            args={{
+              apiToken: PLATEAU_TERRAIN_API_TOKEN,
+              assetId: 3258112, // PLATEAU terrain dataset
+              autoRefreshToken: true
+            }}
+          />
+          <TilesPlugin
+            plugin={TileMaterialReplacementPlugin}
+            args={() => new MeshLambertNodeMaterial()}
+          />
+          <TilesPlugin plugin={TilesFadePlugin} />
+        </TilesRenderer>
+      </scene>
     </>
   )
 }
 
-interface StoryProps extends PointOfViewProps {
-  fov?: number
-  csmFar: number
-}
+interface StoryProps extends PointOfViewProps {}
 
 interface StoryArgs
-  extends
-    OutputPassArgs,
-    ToneMappingArgs,
-    LocalDateArgs,
-    ShadowLengthArgs,
-    AtmosphereArgs {
-  googleMapsApiKey: string
-}
+  extends OutputPassArgs, ToneMappingArgs, LocalDateArgs, AtmosphereArgs {}
 
-export const Story: StoryFC<StoryProps, StoryArgs> = ({ fov, ...props }) => (
+export const Story: StoryFC<StoryProps, StoryArgs> = props => (
   <WebGPUCanvas
-    shadows
-    camera={{ fov }}
     renderer={{
       onInit: renderer => {
         renderer.library.addLight(AtmosphereLightNode, AtmosphereLight)
@@ -378,31 +310,29 @@ export const Story: StoryFC<StoryProps, StoryArgs> = ({ fov, ...props }) => (
     }}
   >
     <Content {...props} />
-    <Description>
-      <TilesAttribution />
-    </Description>
+    <Description />
   </WebGPUCanvas>
 )
 
 Story.args = {
-  googleMapsApiKey: '',
-  ...atmosphereArgs({
-    showGround: false
+  ...atmosphereArgs(),
+  ...localDateArgs({
+    dayOfYear: 0,
+    timeOfDay: 9
   }),
-  ...shadowLengthArgs(),
-  ...localDateArgs(),
-  ...toneMappingArgs(),
+  ...toneMappingArgs({
+    toneMappingExposure: 5
+  }),
   ...outputPassArgs(),
   ...rendererArgs()
 }
 
 Story.argTypes = {
-  googleMapsApiKey: { control: 'text' },
   ...atmosphereArgTypes(),
-  ...shadowLengthArgTypes(),
   ...localDateArgTypes(),
   ...toneMappingArgTypes(),
   ...outputPassArgTypes({
+    hasNormal: true,
     hasVelocity: true
   }),
   ...rendererArgTypes()

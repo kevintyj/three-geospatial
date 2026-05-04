@@ -1,17 +1,14 @@
-import { OrbitControls, Sphere } from '@react-three/drei'
-import { useThree } from '@react-three/fiber'
+import { Box, OrbitControls } from '@react-three/drei'
+import { extend, useThree, type ThreeElement } from '@react-three/fiber'
 import { useLayoutEffect, type FC } from 'react'
-import { AgXToneMapping } from 'three'
+import { context, float, pass, toneMapping, uniform } from 'three/tsl'
 import {
-  context,
-  diffuseColor,
-  mrt,
-  normalView,
-  pass,
-  toneMapping,
-  uniform
-} from 'three/tsl'
-import { RenderPipeline, type Renderer } from 'three/webgpu'
+  AgXToneMapping,
+  DoubleSide,
+  MeshPhysicalNodeMaterial,
+  RenderPipeline,
+  type Renderer
+} from 'three/webgpu'
 
 import {
   getECIToECEFRotationMatrix,
@@ -19,15 +16,12 @@ import {
   getSunDirectionECI
 } from '@takram/three-atmosphere'
 import {
-  aerialPerspective,
-  AtmosphereContext
+  AtmosphereContext,
+  AtmosphereLight,
+  AtmosphereLightNode,
+  skyBackdrop
 } from '@takram/three-atmosphere/webgpu'
-import {
-  dithering,
-  highpVelocity,
-  lensFlare,
-  temporalAntialias
-} from '@takram/three-geospatial/webgpu'
+import { dithering, lensFlare } from '@takram/three-geospatial/webgpu'
 
 import type { StoryFC } from '../components/createStory'
 import { Description } from '../components/Description'
@@ -44,12 +38,6 @@ import {
   useLocationControls,
   type LocationArgs
 } from '../controls/locationControls'
-import {
-  outputPassArgs,
-  outputPassArgTypes,
-  useOutputPassControls,
-  type OutputPassArgs
-} from '../controls/outputPassControls'
 import { rendererArgs, rendererArgTypes } from '../controls/rendererControls'
 import {
   toneMappingArgs,
@@ -59,6 +47,15 @@ import {
 } from '../controls/toneMappingControls'
 import { useGuardedFrame } from '../hooks/useGuardedFrame'
 import { useResource } from '../hooks/useResource'
+import { useTransientControl } from '../hooks/useTransientControl'
+
+declare module '@react-three/fiber' {
+  interface ThreeElements {
+    atmosphereLight: ThreeElement<typeof AtmosphereLight>
+  }
+}
+
+extend({ AtmosphereLight })
 
 const Content: FC<StoryProps> = () => {
   const renderer = useThree<Renderer>(({ gl }) => gl as any)
@@ -75,62 +72,65 @@ const Content: FC<StoryProps> = () => {
     })
   }, [renderer, atmosphereContext])
 
+  const backdropNode = useResource(() => {
+    const skyNode = skyBackdrop()
+    skyNode.moonNode.intensity.value = 10
+    return skyNode
+  }, [])
+
+  const material = useResource(
+    () =>
+      new MeshPhysicalNodeMaterial({
+        backdropNode,
+        backdropAlphaNode: float(0.5),
+        side: DoubleSide
+      }),
+    [backdropNode]
+  )
+
   // Post-processing:
 
   const passNode = useResource(
-    () =>
-      pass(scene, camera, { samples: 0 }).setMRT(
-        mrt({
-          output: diffuseColor,
-          normal: normalView,
-          velocity: highpVelocity
-        })
-      ),
+    () => pass(scene, camera, { samples: 0 }),
     [scene, camera]
   )
 
-  const colorNode = passNode.getTextureNode('output')
-  const depthNode = passNode.getTextureNode('depth')
-  const normalNode = passNode.getTextureNode('normal')
-  const velocityNode = passNode.getTextureNode('velocity')
-
-  const aerialNode = useResource(() => {
-    const aerialNode = aerialPerspective(colorNode, depthNode)
-    aerialNode.normalNode = normalNode
-    aerialNode.lighting = true
-    return aerialNode
-  }, [colorNode, depthNode, normalNode])
-
-  const lensFlareNode = useResource(() => lensFlare(aerialNode), [aerialNode])
+  const lensFlareNode = useResource(() => lensFlare(passNode), [passNode])
 
   const toneMappingNode = useResource(
     () => toneMapping(AgXToneMapping, uniform(0), lensFlareNode),
     [lensFlareNode]
   )
 
-  const taaNode = useResource(
-    () => temporalAntialias(toneMappingNode, depthNode, velocityNode, camera),
-    [camera, depthNode, velocityNode, toneMappingNode]
-  )
-
   const renderPipeline = useResource(
-    () => new RenderPipeline(renderer, taaNode.add(dithering)),
-    [renderer, taaNode]
+    () => new RenderPipeline(renderer, toneMappingNode.add(dithering)),
+    [renderer, toneMappingNode]
   )
 
   useGuardedFrame(() => {
     renderPipeline.render()
   }, 1)
 
-  // Output pass controls:
+  useTransientControl(
+    ({ showSun, showMoon }: StoryArgs) => ({
+      showSun,
+      showMoon
+    }),
+    options => {
+      Object.assign(backdropNode, options)
+      backdropNode.needsUpdate = true
+      material.needsUpdate = true
+    }
+  )
 
-  useOutputPassControls(
-    renderPipeline,
-    passNode,
-    (outputNode, outputColorTransform) => {
-      renderPipeline.outputNode = outputNode
-      renderPipeline.outputColorTransform = outputColorTransform
-      renderPipeline.needsUpdate = true
+  useTransientControl(
+    ({ showGround }: StoryArgs) => ({
+      showGround
+    }),
+    ({ showGround }) => {
+      atmosphereContext.showGround = showGround
+      backdropNode.needsUpdate = true
+      material.needsUpdate = true
     }
   )
 
@@ -157,25 +157,39 @@ const Content: FC<StoryProps> = () => {
 
   return (
     <>
-      <OrbitControls target={[0, 0.5, 0]} minDistance={1} />
-      <Sphere args={[0.5, 128, 128]} position={[0, 0.5, 0]} />
+      <atmosphereLight />
+      <OrbitControls minDistance={0} />
+      <Box args={[2, 2, 2]} material={material} />
     </>
   )
 }
 
 interface StoryProps {}
 
-interface StoryArgs
-  extends OutputPassArgs, ToneMappingArgs, LocationArgs, LocalDateArgs {}
+interface StoryArgs extends ToneMappingArgs, LocationArgs, LocalDateArgs {
+  showSun: boolean
+  showMoon: boolean
+  showGround: boolean
+}
 
 export const Story: StoryFC<StoryProps, StoryArgs> = props => (
-  <WebGPUCanvas camera={{ position: [2, 1, 2] }}>
+  <WebGPUCanvas
+    camera={{ position: [1, 0, 0] }}
+    renderer={{
+      onInit: renderer => {
+        renderer.library.addLight(AtmosphereLightNode, AtmosphereLight)
+      }
+    }}
+  >
     <Content {...props} />
     <Description />
   </WebGPUCanvas>
 )
 
 Story.args = {
+  showSun: true,
+  showMoon: true,
+  showGround: true,
   ...localDateArgs({
     dayOfYear: 0,
     timeOfDay: 9
@@ -188,17 +202,27 @@ Story.args = {
   ...toneMappingArgs({
     toneMappingExposure: 10
   }),
-  ...outputPassArgs(),
   ...rendererArgs()
 }
 
 Story.argTypes = {
+  showSun: {
+    control: {
+      type: 'boolean'
+    }
+  },
+  showMoon: {
+    control: {
+      type: 'boolean'
+    }
+  },
+  showGround: {
+    control: {
+      type: 'boolean'
+    }
+  },
   ...localDateArgTypes(),
   ...locationArgTypes(),
   ...toneMappingArgTypes(),
-  ...outputPassArgTypes({
-    hasNormal: true,
-    hasVelocity: true
-  }),
   ...rendererArgTypes()
 }
