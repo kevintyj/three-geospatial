@@ -17,7 +17,7 @@ export const Dragon: FC<DragonProps> = props => {
   const [mesh, setMesh] = useState<Mesh>()
 
   useEffect(() => {
-    gltfLoader.load('/public/dragon_attenuation.glb', gltf => {
+    gltfLoader.load('public/dragon_attenuation.glb', gltf => {
       const mesh = gltf.scene.getObjectByName('Dragon') as Mesh
       const material = new MeshPhysicalNodeMaterial(
         mesh.material as MeshPhysicalMaterial
