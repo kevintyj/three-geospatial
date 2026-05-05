@@ -6,7 +6,7 @@ import {
   RGBAFormat,
   Vector3
 } from 'three'
-import { pmremTexture, positionGeometry, vec4 } from 'three/tsl'
+import { Fn, pmremTexture, positionGeometry, vec4 } from 'three/tsl'
 import {
   NodeMaterial,
   NodeUpdateType,
@@ -16,7 +16,11 @@ import {
 } from 'three/webgpu'
 
 import { QuadGeometry, radians } from '@takram/three-geospatial'
-import { OnBeforeFrameUpdate } from '@takram/three-geospatial/webgpu'
+import {
+  inverseProjectionMatrix,
+  inverseViewMatrix,
+  OnBeforeFrameUpdate
+} from '@takram/three-geospatial/webgpu'
 
 import { getAtmosphereContext } from './AtmosphereContext'
 import { sky, type SkyNode } from './SkyNode'
@@ -48,7 +52,13 @@ export class SkyEnvironmentNode extends TempNode {
     this.skyNode.showSun = false
     this.skyNode.showMoon = false
     this.skyNode.showStars = false
-    this.skyNode.useContextCamera = false
+    this.skyNode.rayDirectionECEF = Fn(() => {
+      const positionView = inverseProjectionMatrix().mul(
+        vec4(positionGeometry, 1)
+      ).xyz
+      const directionWorld = inverseViewMatrix().mul(vec4(positionView, 0)).xyz
+      return directionWorld
+    })()
 
     this.renderTarget = new CubeRenderTarget(size, {
       depthBuffer: false,

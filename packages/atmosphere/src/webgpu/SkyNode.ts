@@ -75,6 +75,7 @@ export class SkyNode extends TempNode {
 
     const { worldToUnit } = atmosphereContext.parameters
     const {
+      camera,
       matrixWorldToECEF,
       matrixViewToECEF,
       sunDirectionECEF,
@@ -99,7 +100,6 @@ export class SkyNode extends TempNode {
     const getRayDirectionECEF = Fn((): Node<'vec3'> => {
       switch (this.scope) {
         case CAMERA: {
-          const camera = this.useContextCamera ? atmosphereContext.camera : null
           const positionView = inverseProjectionMatrix(camera).mul(
             vec4(positionGeometry, 1)
           ).xyz
