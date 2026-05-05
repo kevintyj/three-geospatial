@@ -46,9 +46,6 @@ export class SkyEnvironmentNode extends TempNode {
   private readonly prevMoonDirection = new Vector3()
 
   private removeLUTUpdate?: () => void
-  private readonly handleLUTUpdate = (): void => {
-    this.needsUpdate = true
-  }
 
   constructor(size = 64) {
     super('vec3')
@@ -143,16 +140,19 @@ export class SkyEnvironmentNode extends TempNode {
   override setup(builder: NodeBuilder): unknown {
     if (this.removeLUTUpdate == null) {
       const { lutNode } = getAtmosphereContext(builder)
+      const callback = (): void => {
+        this.needsUpdate = true
+      }
       lutNode.addEventListener(
         // @ts-expect-error Cannot specify the events map
         'update',
-        this.handleLUTUpdate
+        callback
       )
       this.removeLUTUpdate = () => {
         lutNode.removeEventListener(
           // @ts-expect-error Cannot specify the events map
           'update',
-          this.handleLUTUpdate
+          callback
         )
       }
     }
