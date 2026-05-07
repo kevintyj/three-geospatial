@@ -27,7 +27,6 @@ import {
   Vector4
 } from 'three'
 import type { CSMShadowNode } from 'three/examples/jsm/csm/CSMShadowNode.js'
-import { hash } from 'three/src/nodes/core/NodeUtils.js'
 import {
   float,
   texture,
@@ -49,7 +48,11 @@ import {
 import invariant from 'tiny-invariant'
 
 import { floorPowerOfTwo } from '@takram/three-geospatial'
-import { OnBeforeFrameUpdate, type Node } from '@takram/three-geospatial/webgpu'
+import {
+  hashValues,
+  OnBeforeFrameUpdate,
+  type Node
+} from '@takram/three-geospatial/webgpu'
 
 import { getAtmosphereContext } from './AtmosphereContext'
 import { CoordinateNode } from './ShadowLengthNode/CoordinateNode'
@@ -117,7 +120,7 @@ export class ShadowLengthNode extends TempNode {
   }
 
   override customCacheKey(): number {
-    return hash(this.currentCascades)
+    return hashValues(this.currentCascades)
   }
 
   override update({ renderer, material }: NodeFrame): void {

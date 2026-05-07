@@ -1,4 +1,3 @@
-import { hash } from 'three/src/nodes/core/NodeUtils.js'
 import {
   Fn,
   mix,
@@ -15,6 +14,7 @@ import { TempNode, type NodeBuilder } from 'three/webgpu'
 import {
   equirectToDirectionWorld,
   inverseProjectionMatrix,
+  hashValues,
   type Node
 } from '@takram/three-geospatial/webgpu'
 
@@ -60,11 +60,11 @@ export class SkyNode extends TempNode {
   }
 
   override customCacheKey(): number {
-    return hash(
-      +this.showSun,
-      +this.showMoon,
-      +this.showStars,
-      +this.moonScattering
+    return hashValues(
+      this.showSun,
+      this.showMoon,
+      this.showStars,
+      this.moonScattering
     )
   }
 

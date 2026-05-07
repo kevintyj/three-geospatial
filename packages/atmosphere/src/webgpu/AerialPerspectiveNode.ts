@@ -1,4 +1,3 @@
-import { hash } from 'three/src/nodes/core/NodeUtils.js'
 import {
   add,
   Fn,
@@ -20,6 +19,7 @@ import { TempNode, type NodeBuilder, type TextureNode } from 'three/webgpu'
 import {
   depthToViewZ,
   inverseProjectionMatrix,
+  hashValues,
   projectionMatrix,
   rayEllipsoidIntersection,
   screenToPositionView,
@@ -71,12 +71,12 @@ export class AerialPerspectiveNode extends TempNode {
   }
 
   override customCacheKey(): number {
-    return hash(
-      +this.correctGeometricError,
-      +this.lighting,
-      +this.transmittance,
-      +this.inscattering,
-      +this.moonScattering
+    return hashValues(
+      this.correctGeometricError,
+      this.lighting,
+      this.transmittance,
+      this.inscattering,
+      this.moonScattering
     )
   }
 

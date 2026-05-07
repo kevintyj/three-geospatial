@@ -28,7 +28,6 @@ import {
   type Camera,
   type DirectionalLight
 } from 'three'
-import { hash } from 'three/src/nodes/core/NodeUtils.js'
 import {
   abs,
   and,
@@ -62,6 +61,7 @@ import { cameraFar, cameraNear } from './accessors'
 import type { Node } from './node'
 import { outputTexture } from './OutputTextureNode'
 import { logarithmicToPerspectiveDepth } from './transformations'
+import { hashValues } from './utils'
 
 // Workgroup size of the compute shader running this code.
 const GROUP_SIZE = 64
@@ -149,9 +149,9 @@ export class ScreenSpaceShadowNode extends TempNode {
   }
 
   override customCacheKey(): number {
-    return hash(
-      this.camera?.id ?? -1,
-      this.mainLight?.id ?? -1,
+    return hashValues(
+      this.camera?.id,
+      this.mainLight?.id,
       this.sampleCount,
       this.hardShadowSamples,
       this.fadeOutSamples

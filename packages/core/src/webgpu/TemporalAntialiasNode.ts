@@ -8,7 +8,6 @@ import {
   Vector2,
   type Camera
 } from 'three'
-import { hash } from 'three/src/nodes/core/NodeUtils.js'
 import {
   and,
   convertToTexture,
@@ -49,7 +48,7 @@ import { haltonOffsets } from './internals'
 import type { Node } from './node'
 import { outputTexture } from './OutputTextureNode'
 import { logarithmicToPerspectiveDepth } from './transformations'
-import { isWebGPU } from './utils'
+import { isWebGPU, hashValues } from './utils'
 
 const { resetRendererState, restoreRendererState } = RendererUtils
 
@@ -287,7 +286,7 @@ export class TemporalAntialiasNode extends TempNode {
   }
 
   override customCacheKey(): number {
-    return hash(this.camera.id, +this.debugShowRejection)
+    return hashValues(this.camera.id, this.debugShowRejection)
   }
 
   private createRenderTarget(name?: string): RenderTarget {

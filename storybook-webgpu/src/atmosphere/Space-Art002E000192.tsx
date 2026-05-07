@@ -35,8 +35,7 @@ import {
   AtmosphereContext,
   AtmosphereLight,
   AtmosphereLightNode,
-  AtmosphereParameters,
-  type SkyNode
+  AtmosphereParameters
 } from '@takram/three-atmosphere/webgpu'
 import { Ellipsoid, radians, remap } from '@takram/three-geospatial'
 import { EllipsoidMesh } from '@takram/three-geospatial/r3f'
@@ -143,7 +142,7 @@ const Content: FC<StoryProps> = () => {
     [colorNode, depthNode]
   )
   aerialNode.moonScattering = true
-  const skyNode = aerialNode.skyNode! as SkyNode
+  const skyNode = aerialNode.skyNode!
   skyNode.starsNode.intensity.value = 1 // Physically correct value
 
   const lensFlareNode = useResource(() => lensFlare(aerialNode), [aerialNode])
