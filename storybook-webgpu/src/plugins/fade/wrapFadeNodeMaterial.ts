@@ -12,7 +12,6 @@ const FADE_PARAMS = Symbol('FADE_PARAMS')
 
 interface FadeNodeMaterial extends NodeMaterial {
   [FADE_PARAMS]?: FadeParams
-  params?: FadeParams
   defines?: Record<string, unknown>
 }
 
@@ -34,17 +33,15 @@ const bayerDither4x4 = FnLayout({
   return bayerDither2x2(P1).mul(4).add(bayerDither2x2(P2))
 })
 
-// Define shared uniforms for fadeIn/fadeOut so that "outputNode" can be cached.
-const fadeIn = uniform(0).onObjectUpdate(({ material }) =>
-  material != null
-    ? ((material as FadeNodeMaterial)?.params?.fadeIn.value ?? 0)
-    : 0
-)
-const fadeOut = uniform(0).onObjectUpdate(({ material }) =>
-  material != null
-    ? ((material as FadeNodeMaterial)?.params?.fadeOut.value ?? 0)
-    : 0
-)
+const fadeIn = uniform(0).onObjectUpdate(({ material }, self) => {
+  const { [FADE_PARAMS]: params } = (material ?? {}) as FadeNodeMaterial
+  self.value = params?.fadeIn.value ?? 0
+})
+
+const fadeOut = uniform(0).onObjectUpdate(({ material }, self) => {
+  const { [FADE_PARAMS]: params } = (material ?? {}) as FadeNodeMaterial
+  self.value = params?.fadeOut.value ?? 0
+})
 
 const outputNode = Fn(() => {
   const bayerValue = bayerDither4x4(screenCoordinate.xy.mod(4).floor())
@@ -75,9 +72,11 @@ export function wrapFadeNodeMaterial(material: NodeMaterial): FadeParams {
 
   let FEATURE_FADE = 0
 
-  // Use the interface used in non-node materials:
-  material.params = params
+  // Use the same interface used for non-node materials:
+  material[FADE_PARAMS] = params
   material.defines = {
+    ...material.defines,
+
     get FEATURE_FADE() {
       return FEATURE_FADE
     },
