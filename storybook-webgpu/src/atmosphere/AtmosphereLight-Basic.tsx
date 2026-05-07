@@ -209,12 +209,12 @@ interface StoryArgs
 
 export const Story: StoryFC<StoryProps, StoryArgs> = props => (
   <WebGPUCanvas
+    camera={{ position: [2, 1, 2] }}
     renderer={{
       onInit: renderer => {
         renderer.library.addLight(AtmosphereLightNode, AtmosphereLight)
       }
     }}
-    camera={{ position: [2, 1, 2] }}
   >
     <Content {...props} />
     <Description />

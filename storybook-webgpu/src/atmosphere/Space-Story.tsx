@@ -253,18 +253,18 @@ interface StoryArgs extends OutputPassArgs, ToneMappingArgs, LocalDateArgs {}
 export const Story: StoryFC<StoryProps, StoryArgs> = props => (
   <WebGPUCanvas
     shadows
-    renderer={{
-      reversedDepthBuffer: true,
-      onInit: renderer => {
-        renderer.library.addLight(AtmosphereLightNode, AtmosphereLight)
-      }
-    }}
     camera={{
       fov: 30,
       position: [3.58e7, 0, 0],
       up: [0, 0, 1],
       near: 1e4,
       far: 1e9
+    }}
+    renderer={{
+      reversedDepthBuffer: true,
+      onInit: renderer => {
+        renderer.library.addLight(AtmosphereLightNode, AtmosphereLight)
+      }
     }}
   >
     <Content {...props} />
