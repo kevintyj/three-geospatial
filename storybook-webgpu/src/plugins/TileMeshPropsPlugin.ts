@@ -1,55 +1,37 @@
 import { applyProps, type ElementProps } from '@react-three/fiber'
-import type { TilesRenderer, TilesRendererEventMap } from '3d-tiles-renderer'
-import { Mesh } from 'three'
+import type { Tile, TilesRenderer } from '3d-tiles-renderer'
+import { Mesh, type Object3D } from 'three'
 
-type MeshProps = Omit<
+export type TileMeshPropsPluginOptions = Omit<
   ElementProps<typeof Mesh>,
   // Overwriting materials can cause leaks.
   'material'
 >
 
 export class TileMeshPropsPlugin {
-  readonly props: MeshProps
   tiles?: TilesRenderer
+  readonly options: TileMeshPropsPluginOptions
 
-  constructor(options?: MeshProps) {
-    this.props = { ...options }
-  }
-
-  private readonly handleTileVisibilityChange = ({
-    scene,
-    visible
-  }: TilesRendererEventMap['tile-visibility-change']): void => {
-    if (visible) {
-      scene.traverse(object => {
-        if (object instanceof Mesh) {
-          // @ts-expect-error This should work.
-          applyProps(object, this.props)
-        }
-      })
-    }
+  constructor(options?: TileMeshPropsPluginOptions) {
+    this.options = { ...options }
   }
 
   // Plugin method
   init(tiles: TilesRenderer): void {
     this.tiles = tiles
-    tiles.group.traverse(object => {
-      if (object instanceof Mesh) {
-        // @ts-expect-error This should work.
-        applyProps(object, this.props)
-      }
+
+    tiles.forEachLoadedModel((scene, tile) => {
+      this.processTileModel(scene, tile)
     })
-    tiles.addEventListener(
-      'tile-visibility-change',
-      this.handleTileVisibilityChange
-    )
   }
 
   // Plugin method
-  dispose(): void {
-    this.tiles?.removeEventListener(
-      'tile-visibility-change',
-      this.handleTileVisibilityChange
-    )
+  processTileModel(scene: Object3D, tile: Tile): void {
+    scene.traverse(object => {
+      if (object instanceof Mesh) {
+        // @ts-expect-error This should work.
+        applyProps(object, this.options)
+      }
+    })
   }
 }

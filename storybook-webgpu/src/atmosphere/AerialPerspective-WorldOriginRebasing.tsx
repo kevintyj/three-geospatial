@@ -1,17 +1,13 @@
 import { OrbitControls, Sphere } from '@react-three/drei'
-import { useThree } from '@react-three/fiber'
+import { extend, useThree, type ThreeElement } from '@react-three/fiber'
 import { useLayoutEffect, type FC } from 'react'
-import { AgXToneMapping } from 'three'
+import { AgXToneMapping, Vector3 } from 'three'
+import { context, mrt, output, pass, toneMapping, uniform } from 'three/tsl'
 import {
-  context,
-  diffuseColor,
-  mrt,
-  normalView,
-  pass,
-  toneMapping,
-  uniform
-} from 'three/tsl'
-import { RenderPipeline, type Renderer } from 'three/webgpu'
+  MeshLambertNodeMaterial,
+  RenderPipeline,
+  type Renderer
+} from 'three/webgpu'
 
 import {
   getECIToECEFRotationMatrix,
@@ -20,8 +16,11 @@ import {
 } from '@takram/three-atmosphere'
 import {
   aerialPerspective,
-  AtmosphereContext
+  AtmosphereContext,
+  AtmosphereLight,
+  AtmosphereLightNode
 } from '@takram/three-atmosphere/webgpu'
+import { Ellipsoid, Geodetic, radians } from '@takram/three-geospatial'
 import {
   dithering,
   highpVelocity,
@@ -41,7 +40,6 @@ import {
 import {
   locationArgs,
   locationArgTypes,
-  useLocationControls,
   type LocationArgs
 } from '../controls/locationControls'
 import {
@@ -57,8 +55,22 @@ import {
   useToneMappingControls,
   type ToneMappingArgs
 } from '../controls/toneMappingControls'
+import { useCombinedChange } from '../hooks/useCombinedChange'
 import { useGuardedFrame } from '../hooks/useGuardedFrame'
 import { useResource } from '../hooks/useResource'
+import { useSpringControl } from '../hooks/useSpringControl'
+
+declare module '@react-three/fiber' {
+  interface ThreeElements {
+    atmosphereLight: ThreeElement<typeof AtmosphereLight>
+    meshLambertNodeMaterial: ThreeElement<typeof MeshLambertNodeMaterial>
+  }
+}
+
+extend({ AtmosphereLight, MeshLambertNodeMaterial })
+
+const geodetic = new Geodetic()
+const position = new Vector3()
 
 const Content: FC<StoryProps> = () => {
   const renderer = useThree<Renderer>(({ gl }) => gl as any)
@@ -81,8 +93,7 @@ const Content: FC<StoryProps> = () => {
     () =>
       pass(scene, camera, { samples: 0 }).setMRT(
         mrt({
-          output: diffuseColor,
-          normal: normalView,
+          output,
           velocity: highpVelocity
         })
       ),
@@ -91,15 +102,12 @@ const Content: FC<StoryProps> = () => {
 
   const colorNode = passNode.getTextureNode('output')
   const depthNode = passNode.getTextureNode('depth')
-  const normalNode = passNode.getTextureNode('normal')
   const velocityNode = passNode.getTextureNode('velocity')
 
-  const aerialNode = useResource(() => {
-    const aerialNode = aerialPerspective(colorNode, depthNode)
-    aerialNode.normalNode = normalNode
-    aerialNode.lighting = true
-    return aerialNode
-  }, [colorNode, depthNode, normalNode])
+  const aerialNode = useResource(
+    () => aerialPerspective(colorNode, depthNode),
+    [colorNode, depthNode]
+  )
 
   const lensFlareNode = useResource(() => lensFlare(aerialNode), [aerialNode])
 
@@ -140,7 +148,21 @@ const Content: FC<StoryProps> = () => {
   })
 
   // Location controls:
-  useLocationControls(atmosphereContext.matrixWorldToECEF.value)
+  const longitude = useSpringControl(({ longitude }: LocationArgs) => longitude)
+  const latitude = useSpringControl(({ latitude }: LocationArgs) => latitude)
+  const height = useSpringControl(({ height }: LocationArgs) => height)
+
+  useCombinedChange(
+    [longitude, latitude, height],
+    ([longitude, latitude, height]) => {
+      Ellipsoid.WGS84.getNorthUpEastFrame(
+        geodetic
+          .set(radians(longitude), radians(latitude), height)
+          .toECEF(position),
+        atmosphereContext.matrixWorldToECEF.value
+      )
+    }
+  )
 
   // Local date controls (depends on the longitude of the location):
   useLocalDateControls(date => {
@@ -157,8 +179,11 @@ const Content: FC<StoryProps> = () => {
 
   return (
     <>
+      <atmosphereLight />
       <OrbitControls target={[0, 0.5, 0]} minDistance={1} />
-      <Sphere args={[0.5, 128, 128]} position={[0, 0.5, 0]} />
+      <Sphere args={[0.5, 128, 128]} position={[0, 0.5, 0]}>
+        <meshLambertNodeMaterial />
+      </Sphere>
     </>
   )
 }
@@ -169,7 +194,14 @@ interface StoryArgs
   extends OutputPassArgs, ToneMappingArgs, LocationArgs, LocalDateArgs {}
 
 export const Story: StoryFC<StoryProps, StoryArgs> = props => (
-  <WebGPUCanvas camera={{ position: [2, 1, 2] }}>
+  <WebGPUCanvas
+    camera={{ position: [2, 1, 2] }}
+    renderer={{
+      onInit: renderer => {
+        renderer.library.addLight(AtmosphereLightNode, AtmosphereLight)
+      }
+    }}
+  >
     <Content {...props} />
     <Description />
   </WebGPUCanvas>
@@ -197,7 +229,6 @@ Story.argTypes = {
   ...locationArgTypes(),
   ...toneMappingArgTypes(),
   ...outputPassArgTypes({
-    hasNormal: true,
     hasVelocity: true
   }),
   ...rendererArgTypes()

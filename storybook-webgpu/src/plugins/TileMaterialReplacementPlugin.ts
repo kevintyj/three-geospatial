@@ -1,5 +1,5 @@
-import type { TilesRenderer, TilesRendererEventMap } from '3d-tiles-renderer'
-import { Mesh, type Material, type Texture } from 'three'
+import type { Tile, TilesRenderer } from '3d-tiles-renderer'
+import { Mesh, type Material, type Object3D, type Texture } from 'three'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
 
 import { reinterpretType } from '@takram/three-geospatial'
@@ -22,12 +22,14 @@ function replaceMaterials(mesh: Mesh, materialHandler: () => Material): void {
   }
 
   mesh.material = nextMaterial
+  prevMaterial.dispose()
 }
 
 const defaultMaterial = (): Material => new MeshBasicNodeMaterial()
 
 export class TileMaterialReplacementPlugin {
   tiles?: TilesRenderer
+  priority = -1000
 
   private readonly materialHandler: () => Material
 
@@ -38,39 +40,18 @@ export class TileMaterialReplacementPlugin {
   // Plugin method
   init(tiles: TilesRenderer): void {
     this.tiles = tiles
-    tiles.group.traverse(object => {
-      if (object instanceof Mesh) {
-        replaceMaterials(object, this.materialHandler)
-      }
-    })
-    tiles.addEventListener('load-model', this.handleLoadModel)
-    tiles.addEventListener('dispose-model', this.handleDisposeModel)
-  }
 
-  private readonly handleLoadModel = ({
-    scene
-  }: TilesRendererEventMap['load-model']): void => {
-    scene.traverse(object => {
-      if (object instanceof Mesh) {
-        replaceMaterials(object, this.materialHandler)
-      }
-    })
-  }
-
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
-  private readonly handleDisposeModel = ({
-    scene
-  }: TilesRendererEventMap['dispose-model']): void => {
-    scene.traverse(object => {
-      if (object instanceof Mesh) {
-        object.material.dispose()
-      }
+    tiles.forEachLoadedModel((scene, tile) => {
+      this.processTileModel(scene, tile)
     })
   }
 
   // Plugin method
-  dispose(): void {
-    this.tiles?.removeEventListener('load-model', this.handleLoadModel)
-    this.tiles?.removeEventListener('dispose-model', this.handleDisposeModel)
+  processTileModel(scene: Object3D, tile: Tile): void {
+    scene.traverse(object => {
+      if (object instanceof Mesh) {
+        replaceMaterials(object, this.materialHandler)
+      }
+    })
   }
 }

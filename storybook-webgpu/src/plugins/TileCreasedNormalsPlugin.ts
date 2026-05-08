@@ -1,4 +1,4 @@
-import type { Tile } from '3d-tiles-renderer'
+import type { Tile, TilesRenderer } from '3d-tiles-renderer'
 import { BufferGeometry, Mesh, type Object3D } from 'three'
 
 import {
@@ -26,10 +26,20 @@ export interface TileCreasedNormalsPluginOptions {
 }
 
 export class TileCreasedNormalsPlugin {
+  tiles?: TilesRenderer
   readonly options: TileCreasedNormalsPluginOptions
 
   constructor(options?: TileCreasedNormalsPluginOptions) {
     this.options = { ...options }
+  }
+
+  // Plugin method
+  init(tiles: TilesRenderer): void {
+    this.tiles = tiles
+
+    tiles.forEachLoadedModel((scene, tile) => {
+      void this.processTileModel(scene, tile)
+    })
   }
 
   // Plugin method
