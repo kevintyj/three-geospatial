@@ -51,7 +51,11 @@ function loadGeomAndBbox(pbf: Protobuf, geometry: number, scale: number) {
 export function parseMVTTile(
   buffer: ArrayBuffer,
   tileSize: number,
-  layerKeys?: string[]
+  layerKeys?: string[],
+  filters?: Record<
+    string,
+    (feature: Pick<Feature, 'props'>) => boolean | undefined
+  >
 ): Map<string, Feature[]> {
   const v = new VectorTile(new Protobuf(buffer))
   const result = new Map<string, Feature[]>()
@@ -60,24 +64,29 @@ export function parseMVTTile(
       continue // This greatly speeds things up.
     }
 
+    const filter = filters?.[key]
     const features = []
-    // biome-ignore lint: need to use private fields of vector-tile
     const layer = value as any
     for (let i = 0; i < layer.length; i++) {
+      const feature = layer.feature(i)
+      if (filter?.({ props: feature.properties }) === false) {
+        continue
+      }
+
       const loaded = loadGeomAndBbox(
-        layer.feature(i)._pbf,
-        layer.feature(i)._geometry,
+        feature._pbf,
+        feature._geometry,
         tileSize / layer.extent
       )
       let numVertices = 0
       for (const part of loaded.geom) numVertices += part.length
       features.push({
-        id: layer.feature(i).id,
-        geomType: layer.feature(i).type,
+        id: feature.id,
+        geomType: feature.type,
         geom: loaded.geom,
         numVertices,
         bbox: loaded.bbox,
-        props: layer.feature(i).properties
+        props: feature.properties
       })
     }
     result.set(key, features)
