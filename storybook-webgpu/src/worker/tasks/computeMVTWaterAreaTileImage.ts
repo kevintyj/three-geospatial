@@ -1,22 +1,49 @@
-// cSpell:words zoomaborts
+// cSpell:words zoomaborts busway guideway
 
 import Point from '@mapbox/point-geometry'
 import {
+  LineSymbolizer,
   paint,
   PolygonSymbolizer,
   TileCache,
   View,
-  ZxySource,
+  type Feature,
   type PaintRule,
+  type PreparedTile,
   type Zxy
 } from 'protomaps-leaflet'
 
+import { parseMVTTile } from '../../helpers/parseMVTTile'
 import { Transfer, type TransferResult } from '../transfer'
 
-const size = 256
+const url = 'https://vector.openstreetmap.org/shortbread_v1/{z}/{x}/{y}.mvt'
+const maxDataLevel = 14
+const tileDimension = 256
+const dataDimension = 256
 
-const canvas = new OffscreenCanvas(size, size)
+const canvas = new OffscreenCanvas(tileDimension, tileDimension)
 const context = canvas.getContext('2d') as unknown as CanvasRenderingContext2D
+const scale = tileDimension / dataDimension
+context.scale(scale, scale)
+
+const streetLineWidthAtLevel14: Record<string, number | undefined> = {
+  motorway: 3,
+  trunk: 2.5,
+  primary: 2,
+  secondary: 1.5,
+  tertiary: 1,
+  unclassified: 1,
+  residential: 1,
+  busway: 1,
+  bus_guideway: 1,
+  pedestrian: 0.5,
+  rail: 0.5,
+  living_street: 0.5
+}
+
+const filterWaterPolygons = (feature: Feature): boolean => {
+  return feature.props.kind !== 'glacier'
+}
 
 const paintRules: PaintRule[] = [
   {
@@ -26,20 +53,89 @@ const paintRules: PaintRule[] = [
   {
     dataLayer: 'water_polygons',
     symbolizer: new PolygonSymbolizer({ fill: '#fff' }),
-    filter: (zoom, feature) => feature.props.kind !== 'glacier'
+    filter: (zoom, feature) => filterWaterPolygons(feature)
+  },
+  {
+    dataLayer: 'bridges',
+    symbolizer: new PolygonSymbolizer({ fill: '#000' })
+  },
+  {
+    dataLayer: 'pier_polygons',
+    symbolizer: new PolygonSymbolizer({ fill: '#000' })
+  },
+  {
+    dataLayer: 'dam_polygons',
+    symbolizer: new PolygonSymbolizer({ fill: '#000' })
+  },
+  {
+    dataLayer: 'street_polygons',
+    symbolizer: new PolygonSymbolizer({ fill: '#000' }),
+    filter: (zoom, feature) => feature.props.bridge === true
+  },
+  {
+    dataLayer: 'streets',
+    symbolizer: new LineSymbolizer({
+      color: '#000',
+      width: (z, f) => {
+        if (f == null) {
+          return 0
+        }
+        const width = streetLineWidthAtLevel14[f.props.kind as string] ?? 0.3
+        return width * 2 ** (z - 14)
+      }
+    }),
+    filter: (zoom, feature) => feature.props.bridge === true
   }
 ]
 
-const source = new ZxySource(
-  'https://vector.openstreetmap.org/shortbread_v1/{z}/{x}/{y}.mvt',
-  false
-)
-const cache = new TileCache(source, 1024)
-const view = new View(cache, 14, 2)
+const layerKeys = paintRules.map(({ dataLayer }) => dataLayer)
+
+class TileSource {
+  url: string
+
+  constructor(url: string) {
+    this.url = url
+  }
+
+  public async get(
+    { x, y, z }: Zxy,
+    tileSize: number
+  ): Promise<Map<string, Feature[]>> {
+    const url = this.url
+      .replace('{z}', `${z}`)
+      .replace('{x}', `${x}`)
+      .replace('{y}', `${y}`)
+    return await fetch(url)
+      .then(async response => await response.arrayBuffer())
+      .then(buffer => parseMVTTile(buffer, tileSize, layerKeys))
+  }
+}
+
+function isLandOnly({ data }: PreparedTile): boolean {
+  // If there are no water features, it's definitely land-only.
+  const ocean = data.get('ocean')
+  const waterPolygons = data.get('water_polygons')?.filter(filterWaterPolygons)
+  return (ocean?.length ?? 0) === 0 && (waterPolygons?.length ?? 0) === 0
+}
+
+function isWaterOnly({ data }: PreparedTile): boolean {
+  for (const key of layerKeys) {
+    if (key !== 'ocean' && (data.get(key)?.length ?? 0) > 0) {
+      return false // Has an occlusion
+    }
+  }
+  const ocean = data.get('ocean')
+  return ocean?.[0]?.numVertices === 5 // Expected to be a rectangle
+}
+
+const levelDiff = 2
+const source = new TileSource(url)
+const cache = new TileCache(source, dataDimension * levelDiff ** 2)
+const view = new View(cache, maxDataLevel, levelDiff)
 
 export interface MVTWaterAreaTileImage {
   image?: ImageBitmap
-  fallback?: 'land' | 'water'
+  static?: 'land' | 'water'
 }
 
 export async function computeMVTWaterAreaTileImage(
@@ -47,26 +143,28 @@ export async function computeMVTWaterAreaTileImage(
 ): Promise<TransferResult<MVTWaterAreaTileImage>> {
   try {
     context.fillStyle = '#000'
-    context.fillRect(0, 0, size, size)
+    context.fillRect(0, 0, dataDimension, dataDimension)
 
     const { x, y, z } = coordinate
 
     const bbox = {
-      minX: size * x,
-      minY: size * y,
-      maxX: size * (x + 1),
-      maxY: size * (y + 1)
+      minX: dataDimension * x,
+      minY: dataDimension * y,
+      maxX: dataDimension * (x + 1),
+      maxY: dataDimension * (y + 1)
     }
-    const origin = new Point(size * x, size * y)
+    const origin = new Point(dataDimension * x, dataDimension * y)
 
     const preparedTile = await view.getDisplayTile(coordinate)
+    if (isLandOnly(preparedTile)) {
+      return Transfer({ static: 'land' }, [])
+    }
+    if (isWaterOnly(preparedTile)) {
+      return Transfer({ static: 'water' }, [])
+    }
+
     const preparedTileMap = new Map([['', [preparedTile]]])
     paint(context, z, preparedTileMap, null, paintRules, bbox, origin, false)
-
-    // Because we are using workerpool, having distributed caches doesn't make
-    // much sense. The benefit of reducing the heap memory is greater.
-    cache.cache.clear()
-    source.zoomaborts.length = 0 // This appears to leak
 
     const image = await createImageBitmap(canvas, {
       premultiplyAlpha: 'none',

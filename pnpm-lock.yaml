@@ -54,6 +54,9 @@ importers:
       '@mapbox/point-geometry':
         specifier: ^1.1.0
         version: 1.1.0
+      '@mapbox/vector-tile':
+        specifier: ^2.0.4
+        version: 2.0.4
       '@nx/esbuild':
         specifier: 22.7.0
         version: 22.7.0(@babel/traverse@7.29.0)(@swc-node/register@1.11.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@swc/core@1.15.24(@swc/helpers@0.5.18))(@swc/types@0.1.26)(typescript@5.9.2))(@swc/core@1.15.24(@swc/helpers@0.5.18))(esbuild@0.19.12)(nx@22.7.0(@swc-node/register@1.11.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@swc/core@1.15.24(@swc/helpers@0.5.18))(@swc/types@0.1.26)(typescript@5.9.2))(@swc/core@1.15.24(@swc/helpers@0.5.18)))(verdaccio@6.5.2(encoding@0.1.13)(typanion@3.14.0))
@@ -129,6 +132,9 @@ importers:
       '@types/node':
         specifier: ^22.19.17
         version: 22.19.17
+      '@types/pbf':
+        specifier: ^3.0.5
+        version: 3.0.5
       '@types/react':
         specifier: 19.2.14
         version: 19.2.14
@@ -216,6 +222,9 @@ importers:
       nx:
         specifier: 22.7.0
         version: 22.7.0(@swc-node/register@1.11.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@swc/core@1.15.24(@swc/helpers@0.5.18))(@swc/types@0.1.26)(typescript@5.9.2))(@swc/core@1.15.24(@swc/helpers@0.5.18))
+      pbf:
+        specifier: ^4.0.1
+        version: 4.0.1
       postprocessing:
         specifier: 6.39.1
         version: 6.39.1(three@0.183.2)
@@ -3447,6 +3456,9 @@ packages:
 
   '@types/parse-json@4.0.2':
     resolution: {integrity: sha512-dISoDXWWQwUquiKsyZ4Ng+HX2KsPL7LyHKHQwgGFEA3IaKac4Obd+h2a/a6waisAoepJlBcx9paWqjA8/HVjCw==}
+
+  '@types/pbf@3.0.5':
+    resolution: {integrity: sha512-j3pOPiEcWZ34R6a6mN07mUkM4o4Lwf6hPNt8eilOeZhTFbxFXmKhvXl9Y28jotFPaI1bpPDJsbCprUoNke6OrA==}
 
   '@types/rbush@3.0.4':
     resolution: {integrity: sha512-knSt9cCW8jj1ZSFcFeBZaX++OucmfPxxHiRwTahZfJlnQsek7O0bazTJHWD2RVj9LEoejUYF2de3/stf+QXcXw==}
@@ -12557,6 +12569,8 @@ snapshots:
   '@types/offscreencanvas@2019.7.3': {}
 
   '@types/parse-json@4.0.2': {}
+
+  '@types/pbf@3.0.5': {}
 
   '@types/rbush@3.0.4': {}
 

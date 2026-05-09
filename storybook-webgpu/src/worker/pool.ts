@@ -9,6 +9,10 @@ let pool: Pool | undefined
 
 function createPool(): Pool {
   return (pool ??= workerpool.pool(worker, {
+    // On many-core CPUs, using all the cores consumes too much heap memory.
+    maxWorkers: 8,
+    // This is the strategy that makes sense to use with 3d-tiles-renderer.
+    queueStrategy: 'lifo',
     workerOpts: {
       type: 'module'
     }
