@@ -1,5 +1,4 @@
 export * from './ArrayBufferLoader'
-export * from './bufferGeometry'
 export * from './capabilities'
 export * from './constants'
 export * from './DataTextureLoader'
