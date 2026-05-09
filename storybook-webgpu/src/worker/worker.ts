@@ -1,7 +1,7 @@
 import workerpool from 'workerpool'
 
-import { toCreasedNormals } from './tasks/toCreasedNormals'
+import { computeCreasedNormalAttribute } from './tasks/computeCreasedNormalAttribute'
 
-export const methods = { toCreasedNormals }
+export const methods = { computeCreasedNormalAttribute }
 
 workerpool.worker(methods)
