@@ -64,7 +64,7 @@ export class WaterAreaImageSource extends XYZImageSource {
       return await this.getLandTexture()
     }
 
-    const taskPromise = queueTask('computeMVTWaterAreaTileImage', [{ x, y, z }])
+    const taskPromise = queueTask('computeWaterAreaTileImage', [{ x, y, z }])
 
     const onAbort = (): void => {
       taskPromise.cancel()

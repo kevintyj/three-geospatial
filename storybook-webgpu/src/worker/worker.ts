@@ -1,11 +1,11 @@
 import workerpool from 'workerpool'
 
 import { computeCreasedNormalAttribute } from './tasks/computeCreasedNormalAttribute'
-import { computeMVTWaterAreaTileImage } from './tasks/computeMVTWaterAreaTileImage'
+import { computeWaterAreaTileImage } from './tasks/computeWaterAreaTileImage'
 
 export const methods = {
   computeCreasedNormalAttribute,
-  computeMVTWaterAreaTileImage
+  computeWaterAreaTileImage
 }
 
 workerpool.worker(methods)
