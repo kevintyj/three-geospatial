@@ -578,6 +578,10 @@ export const computeIndirectRadianceToPoint = /*#__PURE__*/ FnVar(
       totalTransmittance.mulAssign(transmittance)
     })
 
-    return radianceTransferStruct(totalRadiance, totalTransmittance)
+    return radianceTransferStruct(
+      totalRadiance,
+      totalTransmittance,
+      rayIntersectsGround(parametersNode, radius, cosView)
+    )
   }
 )

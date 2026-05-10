@@ -43,12 +43,12 @@ export class TileCreasedNormalsPlugin {
     this.tiles = tiles
 
     tiles.forEachLoadedModel((scene, tile) => {
-      void this.processTileModel(scene, tile)
+      this.processTileModel(scene, tile)
     })
   }
 
   // Plugin method
-  async processTileModel(scene: Object3D, tile: Tile): Promise<void> {
+  processTileModel(scene: Object3D, tile: Tile): void {
     const meshes: Mesh[] = []
     scene.traverse(object => {
       if (object instanceof Mesh && object.geometry instanceof BufferGeometry) {
@@ -61,14 +61,17 @@ export class TileCreasedNormalsPlugin {
         meshes.push(object)
       }
     })
-    await Promise.all(
-      meshes.map(async mesh => {
-        const normal = await computeCreasedNormalAttributeAsync(
-          mesh.geometry,
-          this.options.creaseAngle
-        )
-        mesh.geometry.setAttribute('normal', normal)
-      })
-    )
+    for (const mesh of meshes) {
+      computeCreasedNormalAttributeAsync(
+        mesh.geometry,
+        this.options.creaseAngle
+      )
+        .then(normal => {
+          mesh.geometry.setAttribute('normal', normal)
+        })
+        .catch((error: unknown) => {
+          console.error(error)
+        })
+    }
   }
 }

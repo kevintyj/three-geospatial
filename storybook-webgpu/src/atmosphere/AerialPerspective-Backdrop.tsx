@@ -13,7 +13,6 @@ import {
   uniform
 } from 'three/tsl'
 import {
-  MeshLambertNodeMaterial,
   MeshPhysicalNodeMaterial,
   RenderPipeline,
   type Renderer
@@ -285,10 +284,7 @@ const Content: FC<StoryProps> = ({
               autoRefreshToken: true
             }}
           />
-          <TilesPlugin
-            plugin={TileMaterialReplacementPlugin}
-            args={() => new MeshLambertNodeMaterial()}
-          />
+          <TilesPlugin plugin={TileMaterialReplacementPlugin} />
           <TilesPlugin plugin={TilesFadePlugin} />
         </TilesRenderer>
       </scene>

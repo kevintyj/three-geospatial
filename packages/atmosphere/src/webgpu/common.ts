@@ -943,7 +943,8 @@ export const getCombinedScattering = /*#__PURE__*/ FnVar(
 export const radianceTransferStruct = /*#__PURE__*/ struct(
   {
     radiance: RadianceSpectrum,
-    transmittance: DimensionlessSpectrum
+    transmittance: DimensionlessSpectrum,
+    intersectsGround: 'bool'
   },
   'RadianceTransfer'
 )

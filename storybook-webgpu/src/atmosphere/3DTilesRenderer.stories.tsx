@@ -1,6 +1,10 @@
 import type { Meta } from '@storybook/react-vite'
+import { TilesPlugin } from '3d-tiles-renderer/r3f'
 
 import { createStory } from '../components/createStory'
+import { WaterAreaTilesOverlay } from '../plugins/waterArea/WaterAreaImageOverlay'
+import { WaterAreaNodeMaterial } from '../plugins/waterArea/WaterAreaNodeMaterial'
+import { WaterAreaOverlayPlugin } from '../plugins/waterArea/WaterAreaOverlayPlugin'
 import { Story as LightSourceLightingStory } from './3DTilesRenderer-LightSourceLighting'
 import { Story as PostProcessLightingStory } from './3DTilesRenderer-PostProcessLighting'
 import { Story as ShadowsStory } from './3DTilesRenderer-Shadows'
@@ -83,6 +87,38 @@ export const Shadows = createStory(ShadowsStory, {
     docs: {
       source: {
         code: ShadowsCode
+      }
+    }
+  }
+})
+
+export const WaterArea = createStory(LightSourceLightingStory, {
+  props: {
+    longitude: -112.2525,
+    latitude: 69.3782,
+    heading: 69,
+    pitch: -38,
+    distance: 100000,
+    materialHandler: () => new WaterAreaNodeMaterial(),
+    globeChildren: (
+      <TilesPlugin
+        plugin={WaterAreaOverlayPlugin}
+        args={{
+          overlays: [new WaterAreaTilesOverlay()],
+          enableTileSplitting: false
+        }}
+      />
+    )
+  },
+  args: {
+    toneMappingExposure: 5,
+    dayOfYear: 170,
+    timeOfDay: 2.7
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: LightSourceLightingCode
       }
     }
   }

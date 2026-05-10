@@ -1,12 +1,8 @@
 import { extend, useThree, type ThreeElement } from '@react-three/fiber'
-import { useLayoutEffect, useMemo, type FC } from 'react'
+import { useLayoutEffect, useMemo, type FC, type ReactNode } from 'react'
 import { AgXToneMapping, Scene } from 'three'
 import { context, mrt, output, pass, toneMapping, uniform } from 'three/tsl'
-import {
-  MeshLambertNodeMaterial,
-  RenderPipeline,
-  type Renderer
-} from 'three/webgpu'
+import { RenderPipeline, type NodeMaterial, type Renderer } from 'three/webgpu'
 
 import {
   getECIToECEFRotationMatrix,
@@ -76,7 +72,9 @@ const Content: FC<StoryProps> = ({
   height,
   heading,
   pitch,
-  distance
+  distance,
+  materialHandler,
+  globeChildren
 }) => {
   const renderer = useThree<Renderer>(({ gl }) => gl as any)
   const scene = useThree(({ scene }) => scene)
@@ -229,11 +227,9 @@ const Content: FC<StoryProps> = ({
   return (
     <>
       <atmosphereLight />
-      <Globe
-        apiKey={apiKey}
-        materialHandler={() => new MeshLambertNodeMaterial()}
-      >
+      <Globe apiKey={apiKey} materialHandler={materialHandler}>
         <GlobeControls enableDamping overlayScene={overlayScene} />
+        {globeChildren}
       </Globe>
     </>
   )
@@ -241,6 +237,8 @@ const Content: FC<StoryProps> = ({
 
 interface StoryProps extends PointOfViewProps {
   fov?: number
+  materialHandler?: () => NodeMaterial
+  globeChildren?: ReactNode
 }
 
 interface StoryArgs

@@ -1,5 +1,5 @@
 import { useThree } from '@react-three/fiber'
-import { useLayoutEffect, useMemo, type FC } from 'react'
+import { useCallback, useLayoutEffect, useMemo, type FC } from 'react'
 import { AgXToneMapping, Scene } from 'three'
 import {
   context,
@@ -10,7 +10,11 @@ import {
   toneMapping,
   uniform
 } from 'three/tsl'
-import { RenderPipeline, type Renderer } from 'three/webgpu'
+import {
+  MeshBasicNodeMaterial,
+  RenderPipeline,
+  type Renderer
+} from 'three/webgpu'
 
 import {
   getECIToECEFRotationMatrix,
@@ -225,7 +229,10 @@ const Content: FC<StoryProps> = ({
   )
 
   return (
-    <Globe apiKey={apiKey}>
+    <Globe
+      apiKey={apiKey}
+      materialHandler={useCallback(() => new MeshBasicNodeMaterial(), [])}
+    >
       <GlobeControls enableDamping overlayScene={overlayScene} />
     </Globe>
   )

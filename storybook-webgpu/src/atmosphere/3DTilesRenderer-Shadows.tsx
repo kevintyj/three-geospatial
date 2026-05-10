@@ -17,11 +17,7 @@ import {
   toneMapping,
   uniform
 } from 'three/tsl'
-import {
-  MeshLambertNodeMaterial,
-  RenderPipeline,
-  type Renderer
-} from 'three/webgpu'
+import { RenderPipeline, type Renderer } from 'three/webgpu'
 import invariant from 'tiny-invariant'
 
 import {
@@ -336,11 +332,7 @@ const Content: FC<StoryProps> = ({
   return (
     <>
       <primitive object={light} />
-      <Globe
-        ref={tilesRef}
-        apiKey={apiKey}
-        materialHandler={() => new MeshLambertNodeMaterial()}
-      >
+      <Globe ref={tilesRef} apiKey={apiKey}>
         <GlobeControls enableDamping overlayScene={overlayScene} />
         <TilesPlugin
           plugin={TileMeshPropsPlugin}

@@ -1,6 +1,6 @@
 import type { Tile, TilesRenderer } from '3d-tiles-renderer'
 import { Mesh, type Material, type Object3D, type Texture } from 'three'
-import { MeshBasicNodeMaterial } from 'three/webgpu'
+import { MeshLambertNodeMaterial } from 'three/webgpu'
 
 import { reinterpretType } from '@takram/three-geospatial'
 
@@ -25,7 +25,7 @@ function replaceMaterials(mesh: Mesh, materialHandler: () => Material): void {
   prevMaterial.dispose()
 }
 
-const defaultMaterial = (): Material => new MeshBasicNodeMaterial()
+const defaultMaterial = (): Material => new MeshLambertNodeMaterial()
 
 export class TileMaterialReplacementPlugin {
   tiles?: TilesRenderer

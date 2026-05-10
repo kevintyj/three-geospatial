@@ -370,10 +370,7 @@ const Content: FC<StoryProps> = ({
               autoRefreshToken: true
             }}
           />
-          <TilesPlugin
-            plugin={TileMaterialReplacementPlugin}
-            args={() => new MeshLambertNodeMaterial()}
-          />
+          <TilesPlugin plugin={TileMaterialReplacementPlugin} />
           <TilesPlugin
             plugin={TileMeshPropsPlugin}
             args={{ castShadow: true, receiveShadow: true }}

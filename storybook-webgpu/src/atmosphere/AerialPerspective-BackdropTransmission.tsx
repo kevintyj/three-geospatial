@@ -5,7 +5,6 @@ import { AgXToneMapping, BackSide, Scene } from 'three'
 import { context, mrt, output, pass, toneMapping, uniform } from 'three/tsl'
 import {
   MeshBasicNodeMaterial,
-  MeshLambertNodeMaterial,
   RenderPipeline,
   type Renderer
 } from 'three/webgpu'
@@ -281,10 +280,7 @@ const Content: FC<StoryProps> = ({
               autoRefreshToken: true
             }}
           />
-          <TilesPlugin
-            plugin={TileMaterialReplacementPlugin}
-            args={() => new MeshLambertNodeMaterial()}
-          />
+          <TilesPlugin plugin={TileMaterialReplacementPlugin} />
           <TilesPlugin plugin={TilesFadePlugin} />
         </TilesRenderer>
       </scene>

@@ -140,5 +140,6 @@ declare module 'three/src/nodes/accessors/TextureNode.js' {
     size(levelNode: Node): TextureNode
     size(levelNode?: Node): TextureNode
     bias(biasNode: Node): TextureNode
+    offset(biasNode: Node): TextureNode
   }
 }

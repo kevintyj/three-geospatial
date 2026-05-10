@@ -4,11 +4,7 @@ import { TilesPlugin } from '3d-tiles-renderer/r3f'
 import { Suspense, useLayoutEffect, useState, type FC } from 'react'
 import { AgXToneMapping } from 'three'
 import { context, mrt, output, pass, toneMapping, uniform } from 'three/tsl'
-import {
-  MeshLambertNodeMaterial,
-  RenderPipeline,
-  type Renderer
-} from 'three/webgpu'
+import { RenderPipeline, type Renderer } from 'three/webgpu'
 
 import {
   getECIToECEFRotationMatrix,
@@ -206,7 +202,7 @@ const Content: FC<StoryProps> = () => {
           sunDirectionECEF={atmosphereContext.sunDirectionECEF.value}
         />
       </Suspense>
-      <Globe materialHandler={() => new MeshLambertNodeMaterial()}>
+      <Globe>
         <TilesPlugin
           ref={setReorientationPlugin}
           plugin={ReorientationPlugin}

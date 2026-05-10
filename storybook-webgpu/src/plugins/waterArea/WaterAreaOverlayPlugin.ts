@@ -1,7 +1,7 @@
-import { ImageOverlayPlugin as ImageOverlayPluginBase } from '3d-tiles-renderer/three/plugins'
+import { ImageOverlayPlugin } from '3d-tiles-renderer/three/plugins'
 import { Mesh, type Color, type Object3D, type Texture } from 'three'
 
-import { wrapOverlaysNodeMaterial } from './wrapOverlaysNodeMaterial'
+import { wrapWaterAreaNodeMaterial } from './wrapWaterAreaNodeMaterial'
 
 interface ImageOverlay {
   color: Color
@@ -15,11 +15,11 @@ export interface OverlayParams {
   layerInfo: { value: ImageOverlay[] }
 }
 
-export class ImageOverlayPlugin extends ImageOverlayPluginBase {
+export class WaterAreaOverlayPlugin extends ImageOverlayPlugin {
   override _wrapMaterials(scene: Object3D): void {
     scene.traverse(object => {
       if (object instanceof Mesh) {
-        const params = wrapOverlaysNodeMaterial(object.material)
+        const params = wrapWaterAreaNodeMaterial(object.material)
         this.meshParams.set(object, params)
       }
     })

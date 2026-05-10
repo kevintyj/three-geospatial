@@ -9,11 +9,7 @@ import { TilesPlugin } from '3d-tiles-renderer/r3f'
 import { Suspense, useLayoutEffect, useRef, useState, type FC } from 'react'
 import { AgXToneMapping, Vector3, type Object3D } from 'three'
 import { context, mrt, output, pass, toneMapping, uniform } from 'three/tsl'
-import {
-  MeshLambertNodeMaterial,
-  RenderPipeline,
-  type Renderer
-} from 'three/webgpu'
+import { RenderPipeline, type Renderer } from 'three/webgpu'
 
 import {
   getECIToECEFRotationMatrix,
@@ -241,7 +237,7 @@ const Content: FC<StoryProps> = () => {
       <Suspense>
         <B787 ref={modelRef} />
       </Suspense>
-      <Globe materialHandler={() => new MeshLambertNodeMaterial()}>
+      <Globe>
         <TilesPlugin
           ref={setReorientationPlugin}
           plugin={ReorientationPlugin}

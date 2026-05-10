@@ -198,6 +198,7 @@ const getIndirectRadiance = /*#__PURE__*/ FnVar(
 
     const radiance = vec3(0).toVar()
     const transmittance = vec3(1).toVar()
+    const intersectsGround = bool(false).toVar()
 
     // If the view ray does not intersect the atmosphere, simply return 0.
     If(radius.lessThanEqual(topRadius), () => {
@@ -206,11 +207,9 @@ const getIndirectRadiance = /*#__PURE__*/ FnVar(
       const cosLight = camera.dot(lightDirection).div(radius).toConst()
       const cosViewLight = rayDirection.dot(lightDirection).toConst()
 
-      const intersectsGround = rayIntersectsGround(
-        parametersNode,
-        radius,
-        cosView
-      ).toVar()
+      intersectsGround.assign(
+        rayIntersectsGround(parametersNode, radius, cosView)
+      )
 
       transmittance.assign(
         intersectsGround.select(
@@ -378,7 +377,7 @@ const getIndirectRadiance = /*#__PURE__*/ FnVar(
       )
     })
 
-    return radianceTransferStruct(radiance, transmittance)
+    return radianceTransferStruct(radiance, transmittance, intersectsGround)
   }
 )
 
@@ -641,33 +640,7 @@ const getIndirectRadianceToPointLookup = /*#__PURE__*/ FnVar(
         .add(singleMieScattering.mul(miePhase))
         .add(multipleScattering)
     )
-    return radianceTransferStruct(scattering, transmittance)
-  }
-)
-
-const getIndirectRadianceToPointRaymarch = /*#__PURE__*/ FnVar(
-  (
-    context: AtmosphereContext,
-    radius: Node<Length>,
-    cosView: Node<Dimensionless>,
-    cosLight: Node<Dimensionless>,
-    cosViewLight: Node<Dimensionless>,
-    distanceToPoint: Node<Length>,
-    shadowLength: Node<Length2>
-  ): ReturnType<typeof radianceTransferStruct> => {
-    const result = computeIndirectRadianceToPoint(
-      context,
-      radius,
-      cosView,
-      cosLight,
-      cosViewLight,
-      distanceToPoint,
-      shadowLength
-    ).toConst()
-
-    const scattering = result.get('radiance')
-    const transmittance = result.get('transmittance')
-    return radianceTransferStruct(scattering, transmittance)
+    return radianceTransferStruct(scattering, transmittance, intersectsGround)
   }
 )
 
@@ -684,6 +657,7 @@ const getIndirectRadianceToPoint = /*#__PURE__*/ FnVar(
 
     const radiance = vec3(0).toVar()
     const transmittance = vec3(1).toVar()
+    const intersectsGround = bool(false).toVar()
 
     // Avoid artifacts when the ray "segment" does not intersect the top
     // atmosphere boundary.
@@ -757,7 +731,7 @@ const getIndirectRadianceToPoint = /*#__PURE__*/ FnVar(
       const distanceToPoint = rayOrigin.distance(point)
 
       if (context.raymarchScattering) {
-        const result = getIndirectRadianceToPointRaymarch(
+        const result = computeIndirectRadianceToPoint(
           context,
           radius,
           cosView,
@@ -768,6 +742,7 @@ const getIndirectRadianceToPoint = /*#__PURE__*/ FnVar(
         ).toConst()
         radiance.assign(result.get('radiance'))
         transmittance.assign(result.get('transmittance'))
+        intersectsGround.assign(result.get('intersectsGround'))
       } else {
         const result = getIndirectRadianceToPointLookup(
           context,
@@ -780,6 +755,7 @@ const getIndirectRadianceToPoint = /*#__PURE__*/ FnVar(
         ).toConst()
         radiance.assign(result.get('radiance'))
         transmittance.assign(result.get('transmittance'))
+        intersectsGround.assign(result.get('intersectsGround'))
       }
 
       // Extrapolate the inscattered light sampled above to the actual distance
@@ -792,7 +768,7 @@ const getIndirectRadianceToPoint = /*#__PURE__*/ FnVar(
       }
     })
 
-    return radianceTransferStruct(radiance, transmittance)
+    return radianceTransferStruct(radiance, transmittance, intersectsGround)
   }
 )
 
@@ -905,7 +881,8 @@ export const getSolarLuminance = /*#__PURE__*/ FnVar(
 const luminanceTransferStruct = /*#__PURE__*/ struct(
   {
     luminance: Luminance3,
-    transmittance: DimensionlessSpectrum
+    transmittance: DimensionlessSpectrum,
+    intersectsGround: 'bool'
   },
   'LuminanceTransfer'
 )
@@ -935,7 +912,8 @@ export const getIndirectLuminance = /*#__PURE__*/ FnVar(
         .mul(skyRadianceToLuminance.mul(luminanceScale))
       return luminanceTransferStruct(
         luminance,
-        radianceTransfer.get('transmittance')
+        radianceTransfer.get('transmittance'),
+        radianceTransfer.get('intersectsGround')
       )
     }
 )
@@ -965,7 +943,8 @@ export const getIndirectLuminanceToPoint = /*#__PURE__*/ FnVar(
         .mul(skyRadianceToLuminance.mul(luminanceScale))
       return luminanceTransferStruct(
         luminance,
-        radianceTransfer.get('transmittance')
+        radianceTransfer.get('transmittance'),
+        radianceTransfer.get('intersectsGround')
       )
     }
 )

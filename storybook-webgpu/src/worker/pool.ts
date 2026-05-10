@@ -1,4 +1,4 @@
-import workerpool, { type Pool } from 'workerpool'
+import workerpool, { type Pool, type Promise } from 'workerpool'
 import type { ExecOptions } from 'workerpool/types/types'
 
 import type { TransferResult } from './transfer'
@@ -9,6 +9,10 @@ let pool: Pool | undefined
 
 function createPool(): Pool {
   return (pool ??= workerpool.pool(worker, {
+    // On many-core CPUs, using all the cores consumes too much heap memory.
+    maxWorkers: 8,
+    // This is the strategy that makes sense to use with 3d-tiles-renderer.
+    queueStrategy: 'lifo',
     workerOpts: {
       type: 'module'
     }
@@ -22,10 +26,11 @@ type MethodReturnType<
   R = Awaited<ReturnType<(typeof methods)[T]>>
 > = R extends TransferResult<infer U> ? U : R
 
-export async function queueTask<T extends Method>(
+// eslint-disable-next-line @typescript-eslint/promise-function-async
+export function queueTask<T extends Method>(
   method: T,
   params?: MethodParams<T>,
   options?: ExecOptions
 ): Promise<MethodReturnType<T>> {
-  return await createPool().exec(method, params, options)
+  return createPool().exec(method, params, options)
 }
