@@ -121,7 +121,7 @@ class TileSource {
   }
 }
 
-// See: https://github.com/protomaps/protomaps-leaflet/blob/5a153e7d5f49ec903e60eba9700a8ededd5a750e/src/tilecache.ts
+// See: https://github.com/protomaps/protomaps-leaflet/blob/main/src/tilecache.ts
 // Just to specify the threshold for the maximum number of caches.
 class TileCache extends TileCacheBase {
   maxCacheCount: number
@@ -235,7 +235,7 @@ export async function computeMVTWaterAreaTileImage(
       return { solid: 'land' }
     }
     if (isWaterOnly(preparedTile)) {
-      return { solid: 'land' }
+      return { solid: 'water' }
     }
 
     const preparedTileMap = new Map([['', [preparedTile]]])
