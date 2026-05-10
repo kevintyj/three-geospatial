@@ -7,7 +7,7 @@ import {
   UpdateOnChangePlugin
 } from '3d-tiles-renderer/plugins'
 import { TilesPlugin, TilesRenderer } from '3d-tiles-renderer/r3f'
-import type { FC, ReactNode, Ref } from 'react'
+import { useEffect, useState, type FC, type ReactNode, type Ref } from 'react'
 import { mergeRefs } from 'react-merge-refs'
 import type { Material } from 'three'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
@@ -22,10 +22,13 @@ import { connectToDescription } from './Description'
 const dracoLoader = new DRACOLoader()
 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
 
+const GIGABYTE_BYTES = 2 ** 30
+
 export interface GlobeProps {
   ref?: Ref<TilesRendererImpl>
   apiKey?: string
   materialHandler?: () => Material
+  useHighQualitySettings?: boolean
   children?: ReactNode
 }
 
@@ -33,11 +36,29 @@ export const Globe: FC<GlobeProps> = ({
   ref,
   apiKey = import.meta.env.STORYBOOK_GOOGLE_MAP_API_KEY,
   materialHandler,
+  useHighQualitySettings = false,
   children
 }) => {
+  const [tiles, setTiles] = useState<TilesRendererImpl | null>(null)
+  useEffect(() => {
+    if (tiles == null) {
+      return
+    }
+    if (useHighQualitySettings) {
+      tiles.errorTarget = 8
+      tiles.lruCache.maxSize = 18000
+      tiles.lruCache.maxBytesSize = 1.2 * GIGABYTE_BYTES
+    } else {
+      // TilesRenderer's default settings:
+      tiles.errorTarget = 12
+      tiles.lruCache.maxSize = 6000
+      tiles.lruCache.maxBytesSize = 0.4 * GIGABYTE_BYTES
+    }
+  }, [tiles, useHighQualitySettings])
+
   return (
     <TilesRenderer
-      ref={mergeRefs([ref, connectToDescription])}
+      ref={mergeRefs([ref, setTiles, connectToDescription])}
       // Reconstruct tiles when API key changes.
       key={apiKey}
     >
@@ -47,7 +68,8 @@ export const Globe: FC<GlobeProps> = ({
           args={{
             apiToken: import.meta.env.STORYBOOK_ION_API_TOKEN,
             assetId: '2275207', // Google Photorealistic Tiles
-            autoRefreshToken: true
+            autoRefreshToken: true,
+            useRecommendedSettings: !useHighQualitySettings
           }}
         />
       ) : (
@@ -55,7 +77,8 @@ export const Globe: FC<GlobeProps> = ({
           plugin={GoogleCloudAuthPlugin}
           args={{
             apiToken: apiKey,
-            autoRefreshToken: true
+            autoRefreshToken: true,
+            useRecommendedSettings: !useHighQualitySettings
           }}
         />
       )}
