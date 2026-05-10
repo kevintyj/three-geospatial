@@ -6,7 +6,14 @@ import {
 } from '@react-three/fiber'
 import type { TilesRenderer } from '3d-tiles-renderer'
 import { TilesPlugin } from '3d-tiles-renderer/r3f'
-import { useEffect, useLayoutEffect, useMemo, useRef, type FC } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type FC,
+  type ReactNode
+} from 'react'
 import { AgXToneMapping, Scene } from 'three'
 import {
   bool,
@@ -17,7 +24,7 @@ import {
   toneMapping,
   uniform
 } from 'three/tsl'
-import { RenderPipeline, type Renderer } from 'three/webgpu'
+import { RenderPipeline, type NodeMaterial, type Renderer } from 'three/webgpu'
 import invariant from 'tiny-invariant'
 
 import {
@@ -99,7 +106,9 @@ const Content: FC<StoryProps> = ({
   heading,
   pitch,
   distance,
-  csmFar: shadowFar
+  csmFar: shadowFar,
+  materialHandler,
+  globeChildren
 }) => {
   const renderer = useThree<Renderer>(({ gl }) => gl as any)
   const scene = useThree(({ scene }) => scene)
@@ -332,12 +341,13 @@ const Content: FC<StoryProps> = ({
   return (
     <>
       <primitive object={light} />
-      <Globe ref={tilesRef} apiKey={apiKey}>
+      <Globe ref={tilesRef} apiKey={apiKey} materialHandler={materialHandler}>
         <GlobeControls enableDamping overlayScene={overlayScene} />
         <TilesPlugin
           plugin={TileMeshPropsPlugin}
           args={{ castShadow: true, receiveShadow: true }}
         />
+        {globeChildren}
       </Globe>
     </>
   )
@@ -346,6 +356,8 @@ const Content: FC<StoryProps> = ({
 interface StoryProps extends PointOfViewProps {
   fov?: number
   csmFar: number
+  materialHandler?: () => NodeMaterial
+  globeChildren?: ReactNode
 }
 
 interface StoryArgs
