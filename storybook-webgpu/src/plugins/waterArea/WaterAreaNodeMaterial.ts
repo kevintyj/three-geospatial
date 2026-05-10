@@ -50,7 +50,7 @@ const rayDirectionECEF = Fn(builder => {
     .normalize()
 })()
 
-const colorNode = mix(materialColor, color(0x020514), 0.8)
+const colorNode = mix(materialColor, color(0x020514), layerColor.r.mul(0.8))
 
 const roughnessNode = mix(1, 0.35, layerColor.r)
 
