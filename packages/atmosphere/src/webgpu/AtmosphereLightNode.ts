@@ -38,10 +38,14 @@ export class AtmosphereLightNode extends AnalyticLightNode<AtmosphereLight> {
     if (light == null || atmosphereContext == null) {
       return
     }
-    const { matrixECEFToWorld } = atmosphereContext
+    const { matrixWorldToECEF } = atmosphereContext
     light.position
       .copy(this.directionECEF.value)
-      .applyMatrix3(rotationScratch.setFromMatrix4(matrixECEFToWorld.value))
+      .applyMatrix3(
+        // WORKAROUND: We cannot use matrixECEFToWorld here because nothing uses
+        // it in the node graph, therefore it is not updated.
+        rotationScratch.setFromMatrix4(matrixWorldToECEF.value).transpose()
+      )
       .multiplyScalar(light.distance)
       .add(light.target.position)
   }
