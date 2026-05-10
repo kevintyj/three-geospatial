@@ -19,7 +19,7 @@ export class WaterAreaImageSource extends XYZImageSource {
     super({
       ...options,
       levels,
-      tileDimension: 256
+      tileDimension: 128 // Tile size is fixed to 128px
     })
   }
 
