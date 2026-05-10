@@ -17,14 +17,14 @@ const emptyTexture = /*#__PURE__*/ new Texture()
 
 const layerMap = texture().onObjectUpdate(({ material }, self) => {
   const { [OVERLAY_PARAMS]: params } = material as OverlayNodeMaterial
-  self.value = params!.layerMaps.value[0] ?? emptyTexture
+  self.value = params?.layerMaps.value[0] ?? emptyTexture
 })
 
 // WORKAROUND: ImageBitmap with imageOrientation='flipY' flips the UV in WebGPU
 // renderer.
 const layerMapFlipY = uniform('bool').onObjectUpdate(({ material }, self) => {
   const { [OVERLAY_PARAMS]: params } = material as OverlayNodeMaterial
-  self.value = params!.layerMaps.value[0]?.image instanceof ImageBitmap
+  self.value = params?.layerMaps.value[0]?.image instanceof ImageBitmap
 })
 
 const layerUV = attribute('layer_uv_0', 'vec3').toVarying(`layerUV`)

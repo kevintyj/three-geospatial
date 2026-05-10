@@ -33,7 +33,7 @@ const MAX_LAYER_COUNT = 10
 const layerMap = Array.from({ length: MAX_LAYER_COUNT }, (_, index) =>
   texture().onObjectUpdate(({ material }, self) => {
     const { [OVERLAY_PARAMS]: params } = material as OverlayNodeMaterial
-    self.value = params!.layerMaps.value[index] ?? emptyTexture
+    self.value = params?.layerMaps.value[index] ?? emptyTexture
   })
 )
 
@@ -42,35 +42,35 @@ const layerMap = Array.from({ length: MAX_LAYER_COUNT }, (_, index) =>
 const layerMapFlipY = Array.from({ length: MAX_LAYER_COUNT }, (_, index) =>
   uniform('bool').onObjectUpdate(({ material }, self) => {
     const { [OVERLAY_PARAMS]: params } = material as OverlayNodeMaterial
-    self.value = params!.layerMaps.value[index]?.image instanceof ImageBitmap
+    self.value = params?.layerMaps.value[index]?.image instanceof ImageBitmap
   })
 )
 
 const layerColor = Array.from({ length: MAX_LAYER_COUNT }, (_, index) =>
   uniform('color').onObjectUpdate(({ material }, { value }) => {
     const { [OVERLAY_PARAMS]: params } = material as OverlayNodeMaterial
-    value.copy(params!.layerInfo.value[index]?.color ?? emptyColor)
+    value.copy(params?.layerInfo.value[index]?.color ?? emptyColor)
   })
 )
 
 const layerOpacity = Array.from({ length: MAX_LAYER_COUNT }, (_, index) =>
   uniform('float').onObjectUpdate(({ material }, self) => {
     const { [OVERLAY_PARAMS]: params } = material as OverlayNodeMaterial
-    self.value = params!.layerInfo.value[index]?.opacity ?? 0
+    self.value = params?.layerInfo.value[index]?.opacity ?? 0
   })
 )
 
 const layerAlphaMask = Array.from({ length: MAX_LAYER_COUNT }, (_, index) =>
   uniform('bool').onObjectUpdate(({ material }, self) => {
     const { [OVERLAY_PARAMS]: params } = material as OverlayNodeMaterial
-    self.value = params!.layerInfo.value[index]?.alphaMask ?? false
+    self.value = params?.layerInfo.value[index]?.alphaMask ?? false
   })
 )
 
 const layerAlphaInvert = Array.from({ length: MAX_LAYER_COUNT }, (_, index) =>
   uniform('bool').onObjectUpdate(({ material }, self) => {
     const { [OVERLAY_PARAMS]: params } = material as OverlayNodeMaterial
-    self.value = params!.layerInfo.value[index]?.alphaInvert ?? false
+    self.value = params?.layerInfo.value[index]?.alphaInvert ?? false
   })
 )
 
