@@ -1,4 +1,3 @@
-import type { Tile } from '3d-tiles-renderer'
 import { ImageOverlayPlugin } from '3d-tiles-renderer/three/plugins'
 import { Mesh, type Color, type Object3D, type Texture } from 'three'
 

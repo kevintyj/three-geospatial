@@ -6,15 +6,20 @@ import {
   mix,
   normalView,
   positionView,
+  property,
   vec3,
   vec4
 } from 'three/tsl'
-import { MeshPhysicalNodeMaterial, type Node } from 'three/webgpu'
+import {
+  MeshPhysicalNodeMaterial,
+  type Node,
+  type NodeBuilder
+} from 'three/webgpu'
 
 import { getAtmosphereContext } from '@takram/three-atmosphere/webgpu'
 import { rayEllipsoidIntersection } from '@takram/three-geospatial/webgpu'
 
-import { layerColor } from './wrapWaterAreaNodeMaterial'
+export const waterAreaMask = property('float', 'waterAreaMask')
 
 const positionECEF = Fn(builder => {
   const { matrixViewToECEF } = getAtmosphereContext(builder)
@@ -50,13 +55,13 @@ const rayDirectionECEF = Fn(builder => {
     .normalize()
 })()
 
-const colorNode = mix(materialColor, color(0x020514), layerColor.r.mul(0.8))
+const colorNode = mix(materialColor, color(0x020514), waterAreaMask.mul(0.8))
 
-const roughnessNode = mix(1, 0.35, layerColor.r)
+const roughnessNode = mix(1, 0.35, waterAreaMask)
 
-const specularIntensityNode = mix(0, 1, layerColor.r)
+const specularIntensityNode = mix(0, 1, waterAreaMask)
 
-const normalNode = mix(normalView, ellipsoidNormalView, layerColor.r)
+const normalNode = mix(normalView, ellipsoidNormalView, waterAreaMask)
 
 export class WaterAreaNodeMaterial extends MeshPhysicalNodeMaterial {
   override ior = 1.33
@@ -64,6 +69,14 @@ export class WaterAreaNodeMaterial extends MeshPhysicalNodeMaterial {
   override colorNode = colorNode
   override roughnessNode = roughnessNode
   override specularIntensityNode = specularIntensityNode
+
+  waterAreaMaskNode: Node = vec3(0)
+
+  override setupDiffuseColor(builder: NodeBuilder): void {
+    // waterAreaMask must be assigned here since colorNode depends on it.
+    waterAreaMask.assign(this.waterAreaMaskNode)
+    super.setupDiffuseColor(builder)
+  }
 
   override setupNormal(): Node {
     return normalNode

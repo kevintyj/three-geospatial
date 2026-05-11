@@ -4,6 +4,7 @@ import type { NodeMaterial } from 'three/webgpu'
 
 import { reinterpretType } from '@takram/three-geospatial'
 
+import { WaterAreaNodeMaterial } from './WaterAreaNodeMaterial'
 import type { OverlayParams } from './WaterAreaOverlayPlugin'
 
 const OVERLAY_PARAMS = Symbol('OVERLAY_PARAMS')
@@ -27,11 +28,11 @@ const layerMapFlipY = uniform('bool').onObjectUpdate(({ material }, self) => {
   self.value = params?.layerMaps.value[0]?.image instanceof ImageBitmap
 })
 
-const layerUV = attribute('layer_uv_0', 'vec3').toVarying(`layerUV`)
+const layerUV = attribute('layer_uv_0', 'vec3').toVarying('layerUV0')
 
-export const layerColor = Fn(() => {
+const layerColor = Fn(() => {
   const uv = layerMapFlipY.select(layerUV.xy.flipY(), layerUV.xy)
-  return layerMap.sample(uv).toConst()
+  return layerMap.sample(uv)
 })()
 
 export function wrapWaterAreaNodeMaterial(
@@ -62,6 +63,9 @@ export function wrapWaterAreaNodeMaterial(
     set LAYER_COUNT(value: number) {
       if (value !== layerCount) {
         layerCount = value
+        if (material instanceof WaterAreaNodeMaterial) {
+          material.waterAreaMaskNode = layerColor
+        }
       }
     }
   }
