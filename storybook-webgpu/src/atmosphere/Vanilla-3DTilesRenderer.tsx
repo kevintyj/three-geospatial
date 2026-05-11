@@ -91,13 +91,13 @@ async function init(container: HTMLDivElement): Promise<() => void> {
   tiles.setCamera(camera)
   tiles.setResolutionFromRenderer(camera, renderer as any)
   tiles.registerPlugin(
-    (import.meta.env.STORYBOOK_ION_API_TOKEN ?? '') !== ''
-      ? new CesiumIonAuthPlugin({
+    (import.meta.env.STORYBOOK_GOOGLE_MAP_API_KEY ?? '') !== ''
+      ? new GoogleCloudAuthPlugin({
+          apiToken: import.meta.env.STORYBOOK_GOOGLE_MAP_API_KEY
+        })
+      : new CesiumIonAuthPlugin({
           apiToken: import.meta.env.STORYBOOK_ION_API_TOKEN,
           assetId: '2275207' // Google Photorealistic Tiles
-        })
-      : new GoogleCloudAuthPlugin({
-          apiToken: import.meta.env.STORYBOOK_GOOGLE_MAP_API_KEY
         })
   )
   tiles.registerPlugin(new GLTFExtensionsPlugin({ dracoLoader }))

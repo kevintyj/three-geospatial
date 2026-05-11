@@ -57,20 +57,20 @@ export const Globe: FC<GlobeProps> = ({ ref, children }) => {
       // Reconstruct tiles when API key changes.
       key={apiKey}
     >
-      {(import.meta.env.STORYBOOK_ION_API_TOKEN ?? '') !== '' ? (
+      {(import.meta.env.STORYBOOK_GOOGLE_MAP_API_KEY ?? apiKey ?? '') !== '' ? (
         <TilesPlugin
-          plugin={CesiumIonAuthPlugin}
+          plugin={GoogleCloudAuthPlugin}
           args={{
-            apiToken: import.meta.env.STORYBOOK_ION_API_TOKEN,
-            assetId: '2275207', // Google Photorealistic Tiles
+            apiToken: apiKey,
             autoRefreshToken: true
           }}
         />
       ) : (
         <TilesPlugin
-          plugin={GoogleCloudAuthPlugin}
+          plugin={CesiumIonAuthPlugin}
           args={{
-            apiToken: apiKey,
+            apiToken: import.meta.env.STORYBOOK_ION_API_TOKEN,
+            assetId: '2275207', // Google Photorealistic Tiles
             autoRefreshToken: true
           }}
         />
