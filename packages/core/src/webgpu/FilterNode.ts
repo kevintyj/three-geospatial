@@ -1,8 +1,7 @@
 import {
   HalfFloatType,
-  LinearFilter,
   RenderTarget,
-  RGBAFormat,
+  type RenderTargetOptions,
   type Texture
 } from 'three'
 import {
@@ -23,29 +22,29 @@ export abstract class FilterNode extends TempNode {
     return 'FilterNode'
   }
 
-  inputNode?: TextureNode | null
+  inputNode: TextureNode | null
   resolutionScale = 1
 
-  private textureNode?: TextureNode
+  private outputNode?: TextureNode
   private readonly renderTargets: RenderTarget[] = []
 
   constructor(inputNode?: TextureNode | null) {
     super('vec4')
     this.updateBeforeType = NodeUpdateType.FRAME
 
-    this.inputNode = inputNode
+    this.inputNode = inputNode ?? null
   }
 
-  protected createRenderTarget(name?: string): RenderTarget {
+  protected createRenderTarget(
+    name?: string,
+    options?: RenderTargetOptions
+  ): RenderTarget {
     const renderTarget = new RenderTarget(1, 1, {
       depthBuffer: false,
       type: HalfFloatType,
-      format: RGBAFormat
+      ...options
     })
     const texture = renderTarget.texture
-    texture.minFilter = LinearFilter
-    texture.magFilter = LinearFilter
-    texture.generateMipmaps = false
 
     const typeName = (this.constructor as typeof Node).type
     texture.name = name != null ? `${typeName}_${name}` : typeName
@@ -55,33 +54,25 @@ export abstract class FilterNode extends TempNode {
   }
 
   getTextureNode(): TextureNode {
-    invariant(
-      this.textureNode != null,
-      'outputTexture must be specified before getTextureNode() is called.'
-    )
-    return this.textureNode
-  }
-
-  protected get outputTexture(): Texture | null {
-    return this.textureNode?.value ?? null
-  }
-
-  protected set outputTexture(value: Texture | null) {
-    this.textureNode = value != null ? outputTexture(this, value) : undefined
+    const { outputNode } = this
+    invariant(outputNode != null, 'outputNode cannot be null.')
+    return outputNode
   }
 
   abstract setSize(width: number, height: number): this
 
+  protected get outputTexture(): Texture | null {
+    return this.outputNode?.value ?? null
+  }
+
+  protected set outputTexture(value: Texture | null) {
+    this.outputNode = value != null ? outputTexture(this, value) : undefined
+  }
+
   override setup(builder: NodeBuilder): unknown {
-    const { inputNode, textureNode: outputNode } = this
-    invariant(
-      inputNode != null,
-      'inputNode must be specified before being setup.'
-    )
-    invariant(
-      outputNode != null,
-      'outputTexture must be specified before being setup.'
-    )
+    const { inputNode, outputNode } = this
+    invariant(inputNode != null, 'inputNode cannot be null during setup.')
+    invariant(outputNode != null, 'outputNode cannot be null during setup.')
     outputNode.uvNode = inputNode.uvNode
     return outputNode
   }

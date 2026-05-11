@@ -10,14 +10,15 @@ export class KawaseBlurNode extends DualMipmapFilterNode {
     return 'KawaseBlurNode'
   }
 
+  override resolutionScale = 0.5
+
   constructor(inputNode?: TextureNode | null, levels = 4) {
     super(inputNode, levels)
-    this.resolutionScale = 0.5
   }
 
   protected override setupDownsampleNode(builder: NodeBuilder): Node {
     const { inputNode, inputTexelSize } = this
-    invariant(inputNode != null)
+    invariant(inputNode != null, 'inputNode cannot be null during setup.')
 
     const center = uv()
     const offset = vec4(1, 1, -1, -1)
@@ -40,7 +41,7 @@ export class KawaseBlurNode extends DualMipmapFilterNode {
 
   protected override setupUpsampleNode(builder: NodeBuilder): Node {
     const { inputNode, inputTexelSize } = this
-    invariant(inputNode != null)
+    invariant(inputNode != null, 'inputNode cannot be null during setup.')
 
     const center = uv()
     const offset = vec4(1, 1, -1, -1)

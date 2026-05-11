@@ -8,7 +8,6 @@ import {
   type NodeFrame,
   type TextureNode
 } from 'three/webgpu'
-import invariant from 'tiny-invariant'
 
 import { FilterNode } from './FilterNode'
 import type { Node } from './node'
@@ -16,6 +15,10 @@ import type { Node } from './node'
 const { resetRendererState, restoreRendererState } = RendererUtils
 
 export abstract class DualMipmapFilterNode extends FilterNode {
+  static override get type(): string {
+    return 'DualMipmapFilterNode'
+  }
+
   private readonly downsampleRTs: RenderTarget[] = []
   private readonly upsampleRTs: RenderTarget[] = []
   private readonly downsampleMaterial = new NodeMaterial()
@@ -64,14 +67,17 @@ export abstract class DualMipmapFilterNode extends FilterNode {
       return
     }
     const {
+      inputNode,
       downsampleRTs,
       upsampleRTs,
       mesh,
-      inputNode,
       inputTexelSize,
       downsampleNode
     } = this
-    invariant(inputNode != null)
+
+    if (inputNode == null) {
+      return
+    }
 
     const { width, height } = inputNode.value
     this.setSize(width, height)
@@ -107,9 +113,6 @@ export abstract class DualMipmapFilterNode extends FilterNode {
   protected abstract setupUpsampleNode(builder: NodeBuilder): Node
 
   override setup(builder: NodeBuilder): unknown {
-    const { inputNode } = this
-    invariant(inputNode != null)
-
     const { downsampleMaterial, upsampleMaterial } = this
     downsampleMaterial.fragmentNode = this.setupDownsampleNode(builder)
     upsampleMaterial.fragmentNode = this.setupUpsampleNode(builder)

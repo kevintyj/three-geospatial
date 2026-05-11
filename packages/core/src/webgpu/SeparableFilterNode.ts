@@ -8,7 +8,6 @@ import {
   type NodeFrame,
   type TextureNode
 } from 'three/webgpu'
-import invariant from 'tiny-invariant'
 
 import { FilterNode } from './FilterNode'
 import type { Node } from './node'
@@ -16,6 +15,10 @@ import type { Node } from './node'
 const { resetRendererState, restoreRendererState } = RendererUtils
 
 export abstract class SeparableFilterNode extends FilterNode {
+  static override get type(): string {
+    return 'SeparableFilterNode'
+  }
+
   iterations = 1
 
   private readonly horizontalRT: RenderTarget
@@ -52,8 +55,11 @@ export abstract class SeparableFilterNode extends FilterNode {
       return
     }
 
-    const { horizontalRT, verticalRT, mesh, inputNode, direction } = this
-    invariant(inputNode != null)
+    const { inputNode, direction, horizontalRT, verticalRT, mesh } = this
+
+    if (inputNode == null) {
+      return
+    }
 
     const { width, height } = inputNode.value
     this.setSize(width, height)
@@ -81,9 +87,6 @@ export abstract class SeparableFilterNode extends FilterNode {
   protected abstract setupOutputNode(builder: NodeBuilder): Node
 
   override setup(builder: NodeBuilder): unknown {
-    const { inputNode } = this
-    invariant(inputNode != null)
-
     const { material } = this
     material.fragmentNode = this.setupOutputNode(builder)
     material.needsUpdate = true

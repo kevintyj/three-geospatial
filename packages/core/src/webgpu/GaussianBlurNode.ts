@@ -101,7 +101,7 @@ export class GaussianBlurNode extends SeparableFilterNode {
 
   protected override setupOutputNode(builder: NodeBuilder): Node {
     const { inputNode, inputTexelSize, direction } = this
-    invariant(inputNode != null)
+    invariant(inputNode != null, 'inputNode cannot be null during setup.')
 
     const { offsets, weights } = createGaussianKernel(this.kernelSize)
 
