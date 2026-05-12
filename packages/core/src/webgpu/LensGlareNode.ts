@@ -109,12 +109,12 @@ export class LensGlareNode extends FilterNode {
     return 'LensGlareNode'
   }
 
-  spikeNode?: TextureNode | null
+  spikeNode = texture(createSpikeTexture())
   spikePairCount = 6
   wireframe = false
 
   intensity = uniform(1e-5)
-  sizeScale = uniform(new Vector2(1.5, 0.01))
+  sizeScale = uniform(new Vector2(1.5, 0.02)) // length, width
   luminanceThreshold = uniform(100)
 
   private computeNode?: ComputeNode
@@ -147,7 +147,6 @@ export class LensGlareNode extends FilterNode {
     this.material.name = 'LensGlare'
 
     this.inputNode = inputNode ?? null
-    this.resolutionScale = 0.5
 
     this.outputTexture = this.renderTarget.texture
     this.mesh.geometry.indirect = this.indirectBuffer
@@ -273,7 +272,6 @@ export class LensGlareNode extends FilterNode {
 
   private setupMaterial(): void {
     const {
-      inputNode,
       spikeNode,
       instanceBuffer,
       luminanceThreshold,
@@ -282,9 +280,6 @@ export class LensGlareNode extends FilterNode {
       outputTexelSize,
       geometryRatio
     } = this
-
-    invariant(inputNode != null, 'inputNode cannot be null during setup.')
-    invariant(spikeNode != null, 'spikeNode cannot be null during setup.')
 
     const instance = instanceBuffer.element(instanceIndex)
 
@@ -321,11 +316,12 @@ export class LensGlareNode extends FilterNode {
   }
 
   override setup(builder: NodeBuilder): unknown {
-    if (this.spikeNode == null) {
-      const spikeTexture = createSpikeTexture()
-      spikeTexture.colorSpace = SRGBColorSpace
-      this.spikeNode = texture(spikeTexture)
-    }
+    const { inputNode } = this
+    invariant(inputNode != null, 'inputNode cannot be null during setup.')
+    // We are going to use the input node in the compute shader, while it's not
+    // setup at this time. Manually add the input node to dependency here,
+    // otherwise it lags 1 frame behind.
+    inputNode.setup(builder)
 
     this.setupMaterial()
 
