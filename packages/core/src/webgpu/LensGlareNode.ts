@@ -5,7 +5,8 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   SRGBColorSpace,
-  Vector2
+  Vector2,
+  type Texture
 } from 'three'
 import {
   atomicAdd,
@@ -109,7 +110,7 @@ export class LensGlareNode extends FilterNode {
     return 'LensGlareNode'
   }
 
-  quadNode = texture(createQuadTexture())
+  quadTexture: Texture = createQuadTexture()
   quadCount = 6
   wireframe = false
 
@@ -163,7 +164,7 @@ export class LensGlareNode extends FilterNode {
     const h = Math.max(Math.round(height * resolutionScale), 1)
     this.renderTarget.setSize(w, h)
 
-    const tileWidth = Math.floor(w / 2)
+    const tileWidth = Math.floor(w / 2) // Stride of 2
     const tileHeight = Math.floor(h / 2)
     this.tileSize.value.set(tileWidth, tileHeight)
 
@@ -252,7 +253,8 @@ export class LensGlareNode extends FilterNode {
         Return()
       })
 
-      const uv = vec2(globalId.xy).mul(outputTexelSize).mul(2)
+      const texelSize = outputTexelSize.mul(2) // Stride of 2
+      const uv = vec2(globalId.xy).mul(texelSize)
       const inputColor = inputNode.sample(uv)
       const inputLuminance = inputColor.a // Alpha channel stores luminance
 
@@ -279,7 +281,7 @@ export class LensGlareNode extends FilterNode {
 
   private setupMaterial(): void {
     const {
-      quadNode,
+      quadTexture,
       instanceBuffer,
       luminanceThreshold,
       intensity,
@@ -292,7 +294,7 @@ export class LensGlareNode extends FilterNode {
 
     this.material.colorNode = this.wireframe
       ? vec4(1)
-      : quadNode.mul(instance.get('color').mul(intensity))
+      : texture(quadTexture).mul(instance.get('color').mul(intensity))
 
     this.material.vertexNode = Fn(() => {
       const sin = instance.get('sin')
@@ -300,7 +302,7 @@ export class LensGlareNode extends FilterNode {
       const rotation = mat3(cos, sin, 0, sin.negate(), cos, 0, 0, 0, 1)
 
       const positionTile = instance.get('position')
-      const texelSize = outputTexelSize.mul(2)
+      const texelSize = outputTexelSize.mul(2) // Stride of 2
       const uv = positionTile.mul(texelSize).toConst()
       const positionNDC = uv.flipY().mul(2).sub(1)
 
@@ -337,6 +339,7 @@ export class LensGlareNode extends FilterNode {
   }
 
   override dispose(): void {
+    this.quadTexture.dispose()
     this.renderTarget.dispose()
     this.material.dispose()
     this.mesh.geometry.dispose()
