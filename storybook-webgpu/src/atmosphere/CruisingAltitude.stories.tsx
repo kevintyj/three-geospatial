@@ -19,6 +19,9 @@ export default {
 } satisfies Meta
 
 export const CruisingAltitude = createStory(Story, {
+  args: {
+    showGround: true
+  },
   parameters: {
     docs: {
       source: {
