@@ -30,7 +30,6 @@ import {
   IndirectStorageBufferAttribute,
   MeshBasicNodeMaterial,
   RendererUtils,
-  StorageInstancedBufferAttribute,
   type ComputeNode,
   type NodeBuilder,
   type NodeFrame,
@@ -126,7 +125,7 @@ export class LensGlareNode extends FilterNode {
     new Uint32Array([6, 0, 0, 0, 0]),
     1
   )
-  private readonly instanceBuffer = instancedArray(1, instanceStruct)
+  private instanceBuffer = instancedArray(1, instanceStruct)
 
   private readonly renderTarget = this.createRenderTarget()
   private readonly material = new MeshBasicNodeMaterial({
@@ -168,14 +167,12 @@ export class LensGlareNode extends FilterNode {
     const tileHeight = Math.floor(h / 2)
     this.tileSize.value.set(tileWidth, tileHeight)
 
-    const bufferCount = Math.ceil(tileWidth * tileHeight)
-    const { instanceBuffer } = this
-    if (instanceBuffer.bufferCount < bufferCount) {
-      instanceBuffer.value = new StorageInstancedBufferAttribute(
-        bufferCount,
-        instanceBuffer.value.itemSize
-      )
-      instanceBuffer.bufferCount = bufferCount
+    // NOTE: Buffering here doesn't really work and causes a performance
+    // ramification. It needs further investigations.
+    const bufferCount = tileWidth * tileHeight
+    if (this.instanceBuffer.bufferCount < bufferCount) {
+      this.instanceBuffer.dispose()
+      this.instanceBuffer = instancedArray(bufferCount, instanceStruct)
 
       this.setupCompute()
       this.setupMaterial()
