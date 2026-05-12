@@ -1,10 +1,6 @@
 import type { Meta } from '@storybook/react-vite'
-import { TilesPlugin } from '3d-tiles-renderer/r3f'
 
 import { createStory } from '../components/createStory'
-import { WaterAreaTilesOverlay } from '../plugins/waterArea/WaterAreaImageOverlay'
-import { WaterAreaNodeMaterial } from '../plugins/waterArea/WaterAreaNodeMaterial'
-import { WaterAreaOverlayPlugin } from '../plugins/waterArea/WaterAreaOverlayPlugin'
 import { Story } from './3DTilesRenderer-Shadows'
 
 import StoryCode from './3DTilesRenderer-Shadows?raw'
@@ -30,17 +26,7 @@ export const Cityscape = createStory(Story, {
     pitch: -25,
     distance: 2667,
     fov: 50,
-    csmFar: 1e4,
-    materialHandler: () => new WaterAreaNodeMaterial(),
-    globeChildren: (
-      <TilesPlugin
-        plugin={WaterAreaOverlayPlugin}
-        args={{
-          overlays: [new WaterAreaTilesOverlay()],
-          enableTileSplitting: false
-        }}
-      />
-    )
+    csmFar: 1e4
   },
   args: {
     toneMappingExposure: 40,
