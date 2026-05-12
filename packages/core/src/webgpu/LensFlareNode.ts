@@ -49,10 +49,9 @@ export class LensFlareNode extends TempNode {
       resolutionScale: 0.5
     })
 
-    // Use the full resolution because the thresholdNode already downsamples the
-    // input texture.
-    this.blurNode.resolutionScale = 1
-    this.glareNode.resolutionScale = 1
+    this.thresholdNode.resolutionScale = 0.5
+    this.blurNode.resolutionScale = 0.5 // Relative to thresholdNode: 0.25
+    this.glareNode.resolutionScale = 1 // Relative to thresholdNode: 0.5
   }
 
   override setup(builder: NodeBuilder): unknown {

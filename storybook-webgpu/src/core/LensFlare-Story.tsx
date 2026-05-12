@@ -26,7 +26,10 @@ const Content: FC<StoryProps> = () => {
   const scene = useThree(({ scene }) => scene)
   const camera = useThree(({ camera }) => camera)
 
-  const passNode = useResource(() => pass(scene, camera), [scene, camera])
+  const passNode = useResource(
+    () => pass(scene, camera, { samples: 0 }),
+    [scene, camera]
+  )
 
   const colorNode = passNode.getTextureNode('output')
 

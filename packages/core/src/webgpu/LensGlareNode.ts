@@ -5,7 +5,8 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   SRGBColorSpace,
-  Vector2
+  Vector2,
+  type Texture
 } from 'three'
 import {
   atomicAdd,
@@ -21,7 +22,6 @@ import {
   struct,
   texture,
   uniform,
-  uvec2,
   vec2,
   vec3,
   vec4
@@ -30,6 +30,7 @@ import {
   IndirectStorageBufferAttribute,
   MeshBasicNodeMaterial,
   RendererUtils,
+  StorageInstancedBufferAttribute,
   type ComputeNode,
   type NodeBuilder,
   type NodeFrame,
@@ -44,31 +45,54 @@ import { hashValues } from './utils'
 
 const { resetRendererState, restoreRendererState } = RendererUtils
 
-function createSpikeTexture(): CanvasTexture {
+const glareColors: ReadonlyArray<[number, string]> = [
+  [0.0, '#000'],
+  [0.25, '#666633'],
+  [0.35, '#996633'],
+  [0.45, '#9999cc'],
+  [0.5, '#99ccff'],
+  [0.65, '#fff'],
+  [0.9, '#ccc'],
+  [1, '#666']
+]
+
+function createQuadTexture(): CanvasTexture {
   const width = 256
   const height = 32
-  const margin = 5
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
-  const context = canvas.getContext('2d')
-  invariant(context != null)
+  const context = canvas.getContext('2d')!
 
-  context.beginPath()
-  context.moveTo(0, height / 2)
-  context.lineTo(width / 2, margin)
-  context.lineTo(width, height / 2)
-  context.lineTo(width / 2, height - margin)
-  context.closePath()
+  const colorGradient = context.createLinearGradient(0, 0, width, 0)
+  glareColors.forEach(([t, color]) => {
+    colorGradient.addColorStop(t * 0.5, color)
+  })
+  glareColors.forEach(([t, color]) => {
+    colorGradient.addColorStop(1 - t * 0.5, color)
+  })
+  context.fillStyle = colorGradient
+  context.fillRect(0, 0, width, height)
 
-  const gradient = context.createLinearGradient(0, 0, width, 0)
-  gradient.addColorStop(0, '#000000')
-  gradient.addColorStop(0.5, '#ffffff')
-  gradient.addColorStop(1, '#000000')
-  context.fillStyle = gradient
-  context.fill()
+  const gradientX = context.createLinearGradient(0, 0, width, 0)
+  gradientX.addColorStop(0, 'rgba(0, 0, 0, 1)')
+  gradientX.addColorStop(0.5, 'rgba(0, 0, 0, 0)')
+  gradientX.addColorStop(1, 'rgba(0, 0, 0, 1)')
+  context.fillStyle = gradientX
+  context.fillRect(0, 0, width, height)
 
-  return new CanvasTexture(canvas)
+  const gradientY = context.createLinearGradient(0, 0, 0, height)
+  gradientY.addColorStop(0, 'rgba(0, 0, 0, 1)')
+  gradientY.addColorStop(0.25, 'rgba(0, 0, 0, 0)')
+  gradientY.addColorStop(0.75, 'rgba(0, 0, 0, 0)')
+  gradientY.addColorStop(1, 'rgba(0, 0, 0, 1)')
+  context.fillStyle = gradientY
+  context.fillRect(0, 0, width, height)
+
+  const texture = new CanvasTexture(canvas)
+  texture.colorSpace = SRGBColorSpace
+  texture.needsUpdate = true
+  return texture
 }
 
 const instanceStruct = /*#__PURE__*/ struct({
@@ -86,12 +110,12 @@ export class LensGlareNode extends FilterNode {
     return 'LensGlareNode'
   }
 
-  spikeNode?: TextureNode | null
-  spikePairCount = 6
+  quadTexture: Texture = createQuadTexture()
+  quadCount = 6
   wireframe = false
 
   intensity = uniform(1e-5)
-  sizeScale = uniform(new Vector2(1.5, 0.01))
+  sizeScale = uniform(new Vector2(1.5, 0.02)) // length, width
   luminanceThreshold = uniform(100)
 
   private computeNode?: ComputeNode
@@ -102,7 +126,7 @@ export class LensGlareNode extends FilterNode {
     new Uint32Array([6, 0, 0, 0, 0]),
     1
   )
-  private instanceBuffer = instancedArray(1, instanceStruct)
+  private readonly instanceBuffer = instancedArray(1, instanceStruct)
 
   private readonly renderTarget = this.createRenderTarget()
   private readonly material = new MeshBasicNodeMaterial({
@@ -115,6 +139,7 @@ export class LensGlareNode extends FilterNode {
   private readonly camera = new PerspectiveCamera()
   private rendererState?: RendererUtils.RendererState
 
+  private readonly tileSize = uniform('uvec2')
   private readonly inputTexelSize = uniform('vec2')
   private readonly outputTexelSize = uniform('vec2')
   private readonly geometryRatio = uniform('vec2')
@@ -124,14 +149,13 @@ export class LensGlareNode extends FilterNode {
     this.material.name = 'LensGlare'
 
     this.inputNode = inputNode ?? null
-    this.resolutionScale = 0.5
 
     this.outputTexture = this.renderTarget.texture
     this.mesh.geometry.indirect = this.indirectBuffer
   }
 
   override customCacheKey(): number {
-    return hashValues(this.spikePairCount, this.wireframe)
+    return hashValues(this.quadCount, this.wireframe)
   }
 
   setSize(width: number, height: number): this {
@@ -140,14 +164,20 @@ export class LensGlareNode extends FilterNode {
     const h = Math.max(Math.round(height * resolutionScale), 1)
     this.renderTarget.setSize(w, h)
 
-    const tileWidth = Math.floor(w / 2)
+    const tileWidth = Math.floor(w / 2) // Stride of 2
     const tileHeight = Math.floor(h / 2)
-    const bufferCount = tileWidth * tileHeight
-    // TODO: Buffering
-    if (this.instanceBuffer.bufferCount < bufferCount) {
-      this.instanceBuffer.dispose()
-      this.instanceBuffer = instancedArray(bufferCount, instanceStruct)
-      this.setupCompute(tileWidth, tileHeight)
+    this.tileSize.value.set(tileWidth, tileHeight)
+
+    const bufferCount = Math.ceil(tileWidth * tileHeight)
+    const { instanceBuffer } = this
+    if (instanceBuffer.bufferCount < bufferCount) {
+      instanceBuffer.value = new StorageInstancedBufferAttribute(
+        bufferCount,
+        instanceBuffer.value.itemSize
+      )
+      instanceBuffer.bufferCount = bufferCount
+
+      this.setupCompute()
       this.setupMaterial()
     }
     return this
@@ -186,7 +216,12 @@ export class LensGlareNode extends FilterNode {
     indirectBuffer.array[1] = 0
     indirectBuffer.needsUpdate = true
 
-    void renderer.compute(computeNode)
+    const { width: tileWidth, height: tileHeight } = this.tileSize.value
+    void renderer.compute(computeNode, [
+      Math.ceil(tileWidth / 8),
+      Math.ceil(tileHeight / 8),
+      1
+    ])
 
     this.rendererState = resetRendererState(renderer, this.rendererState)
 
@@ -196,12 +231,13 @@ export class LensGlareNode extends FilterNode {
     restoreRendererState(renderer, this.rendererState)
   }
 
-  private setupCompute(tileWidth: number, tileHeight: number): void {
+  private setupCompute(): void {
     const {
-      spikePairCount,
+      quadCount,
       inputNode,
       indirectBuffer,
       instanceBuffer,
+      tileSize,
       outputTexelSize
     } = this
     invariant(inputNode != null, 'inputNode cannot be null during setup.')
@@ -213,22 +249,19 @@ export class LensGlareNode extends FilterNode {
     ).toAtomic()
 
     this.computeNode = Fn(() => {
-      const tileSize = uvec2(tileWidth, tileHeight)
       If(globalId.xy.greaterThanEqual(tileSize).any(), () => {
         Return()
       })
 
-      const uv = vec2(globalId.xy).mul(outputTexelSize).mul(2)
+      const texelSize = outputTexelSize.mul(2) // Stride of 2
+      const uv = vec2(globalId.xy).mul(texelSize)
       const inputColor = inputNode.sample(uv)
       const inputLuminance = inputColor.a // Alpha channel stores luminance
 
       If(inputLuminance.greaterThan(0.1), () => {
         // The first element is instanceCount in the drawIndexedIndirect buffer.
-        const countBefore = atomicAdd(
-          indirectStorage.element(1),
-          spikePairCount
-        )
-        for (let i = 0; i < spikePairCount; ++i) {
+        const countBefore = atomicAdd(indirectStorage.element(1), quadCount)
+        for (let i = 0; i < quadCount; ++i) {
           const instance = instanceBuffer.element(countBefore.add(i))
           instance.get('color').assign(inputColor.rgb)
           instance.get('luminance').assign(inputLuminance)
@@ -236,22 +269,19 @@ export class LensGlareNode extends FilterNode {
           instance.get('scale').assign(i % 2 === 0 ? 1 : 0.5)
 
           const phi = Math.PI * (3 - Math.sqrt(5))
-          const angle = (Math.PI / spikePairCount) * i + phi
+          const angle = (Math.PI / quadCount) * i + phi
           instance.get('sin').assign(Math.sin(angle))
           instance.get('cos').assign(Math.cos(angle))
         }
       })
-    })().compute(
-      // @ts-expect-error "count" can be dimensional
-      [Math.ceil(tileWidth / 8), Math.ceil(tileHeight / 8), 1],
-      [8, 8, 1]
-    )
+    })()
+      .computeKernel([8, 8, 1])
+      .setName('LensGlare')
   }
 
   private setupMaterial(): void {
     const {
-      inputNode,
-      spikeNode,
+      quadTexture,
       instanceBuffer,
       luminanceThreshold,
       intensity,
@@ -260,14 +290,11 @@ export class LensGlareNode extends FilterNode {
       geometryRatio
     } = this
 
-    invariant(inputNode != null, 'inputNode cannot be null during setup.')
-    invariant(spikeNode != null, 'spikeNode cannot be null during setup.')
-
     const instance = instanceBuffer.element(instanceIndex)
 
     this.material.colorNode = this.wireframe
       ? vec4(1)
-      : spikeNode.mul(instance.get('color').mul(intensity))
+      : texture(quadTexture).mul(instance.get('color').mul(intensity))
 
     this.material.vertexNode = Fn(() => {
       const sin = instance.get('sin')
@@ -275,7 +302,8 @@ export class LensGlareNode extends FilterNode {
       const rotation = mat3(cos, sin, 0, sin.negate(), cos, 0, 0, 0, 1)
 
       const positionTile = instance.get('position')
-      const uv = positionTile.mul(outputTexelSize).mul(2)
+      const texelSize = outputTexelSize.mul(2) // Stride of 2
+      const uv = positionTile.mul(texelSize).toConst()
       const positionNDC = uv.flipY().mul(2).sub(1)
 
       const luminance = instance.get('luminance')
@@ -298,11 +326,12 @@ export class LensGlareNode extends FilterNode {
   }
 
   override setup(builder: NodeBuilder): unknown {
-    if (this.spikeNode == null) {
-      const spikeTexture = createSpikeTexture()
-      spikeTexture.colorSpace = SRGBColorSpace
-      this.spikeNode = texture(spikeTexture)
-    }
+    const { inputNode } = this
+    invariant(inputNode != null, 'inputNode cannot be null during setup.')
+    // We are going to use the input node in the compute shader, while it's not
+    // setup at this time. Manually add the input node to dependency here,
+    // otherwise it lags 1 frame behind.
+    inputNode.setup(builder)
 
     this.setupMaterial()
 
@@ -310,6 +339,7 @@ export class LensGlareNode extends FilterNode {
   }
 
   override dispose(): void {
+    this.quadTexture.dispose()
     this.renderTarget.dispose()
     this.material.dispose()
     this.mesh.geometry.dispose()
