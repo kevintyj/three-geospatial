@@ -164,8 +164,8 @@ export class LensGlareNode extends FilterNode {
 
     const tileWidth = Math.floor(w / 2)
     const tileHeight = Math.floor(h / 2)
-    const bufferCount = tileWidth * tileHeight
-    // TODO: Buffering
+    const bufferCount = Math.ceil(tileWidth * tileHeight * 1.5) // Add a little room to grow
+
     if (this.instanceBuffer.bufferCount < bufferCount) {
       this.instanceBuffer.dispose()
       this.instanceBuffer = instancedArray(bufferCount, instanceStruct)
