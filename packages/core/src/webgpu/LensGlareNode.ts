@@ -91,6 +91,7 @@ function createQuadTexture(): CanvasTexture {
   const texture = new CanvasTexture(canvas)
   texture.colorSpace = SRGBColorSpace
   texture.needsUpdate = true
+  texture.name = 'LensGlare_quad'
   return texture
 }
 

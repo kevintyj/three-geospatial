@@ -65,7 +65,7 @@ export function createStorageTexture(name: string): StorageTexture {
   texture.magFilter = LinearFilter
   texture.colorSpace = NoColorSpace
   texture.generateMipmaps = false
-  texture.name = name
+  texture.name = `AtmosphereLUT_${name}`
   return texture
 }
 
@@ -75,7 +75,7 @@ export function createStorage3DTexture(name: string): Storage3DTexture {
   texture.magFilter = LinearFilter
   texture.colorSpace = NoColorSpace
   texture.generateMipmaps = false
-  texture.name = name
+  texture.name = `AtmosphereLUT_${name}`
   return texture
 }
 
@@ -161,7 +161,7 @@ export class AtmosphereLUTTexturesWebGPU extends AtmosphereLUTTextures {
     })()
       .context({ getAtmosphere: () => context })
       .computeKernel([8, 8, 1])
-      .setName('transmittance')
+      .setName('AtmosphereLUT_transmittance')
 
     void renderer.compute(this.transmittanceNode, [
       Math.ceil(width / 8),
@@ -288,7 +288,7 @@ export class AtmosphereLUTTexturesWebGPU extends AtmosphereLUTTextures {
     })()
       .context({ getAtmosphere: () => context })
       .computeKernel([1, 1, sampleCount])
-      .setName('multipleScattering')
+      .setName('AtmosphereLUT_multipleScattering')
 
     void renderer.compute(this.multipleScatteringNode, [width, height, 1])
   }
@@ -341,7 +341,7 @@ export class AtmosphereLUTTexturesWebGPU extends AtmosphereLUTTextures {
     })()
       .context({ getAtmosphere: () => context })
       .computeKernel([4, 4, 4])
-      .setName('scattering')
+      .setName('AtmosphereLUT_scattering')
 
     void renderer.compute(this.scatteringNode, [
       Math.ceil(width / 4),
@@ -373,7 +373,7 @@ export class AtmosphereLUTTexturesWebGPU extends AtmosphereLUTTextures {
     })()
       .context({ getAtmosphere: () => context })
       .computeKernel([8, 8, 1])
-      .setName('irradiance')
+      .setName('AtmosphereLUT_irradiance')
 
     void renderer.compute(this.irradianceNode, [
       Math.ceil(width / 8),

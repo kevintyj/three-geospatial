@@ -66,7 +66,7 @@ function createRenderTarget(name: string): RenderTarget {
   texture.magFilter = LinearFilter
   texture.colorSpace = NoColorSpace
   texture.generateMipmaps = false
-  texture.name = name
+  texture.name = `AtmosphereLUT_${name}`
   return renderTarget
 }
 
@@ -80,7 +80,7 @@ function createRenderTarget3D(name: string): RenderTarget3D {
   texture.magFilter = LinearFilter
   texture.colorSpace = NoColorSpace
   texture.generateMipmaps = false
-  texture.name = name
+  texture.name = `AtmosphereLUT_${name}`
   return renderTarget
 }
 
