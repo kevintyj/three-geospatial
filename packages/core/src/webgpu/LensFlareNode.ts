@@ -112,6 +112,5 @@ export class LensFlareNode extends TempNode {
   }
 }
 
-export const lensFlare = (inputNode: Node | null): LensFlareNode => {
-  return new LensFlareNode(convertToTexture(inputNode))
-}
+export const lensFlare = (inputNode: Node | null): LensFlareNode =>
+  new LensFlareNode(convertToTexture(inputNode, { name: 'LensFlare_input' }))

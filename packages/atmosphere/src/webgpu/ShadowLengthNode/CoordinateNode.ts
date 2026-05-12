@@ -18,13 +18,7 @@
  * Modified from the original source code.
  */
 
-import {
-  HalfFloatType,
-  RenderTarget,
-  RGBAFormat,
-  type Camera,
-  type Vector2
-} from 'three'
+import { HalfFloatType, RenderTarget, type Camera, type Vector2 } from 'three'
 import {
   float,
   Fn,
@@ -36,7 +30,6 @@ import {
   vec3
 } from 'three/tsl'
 import {
-  LinearFilter,
   NodeMaterial,
   NodeUpdateType,
   QuadMesh,
@@ -85,14 +78,10 @@ export class CoordinateNode extends Node {
 
     const renderTarget = new RenderTarget(1, 1, {
       depthBuffer: false,
-      type: HalfFloatType,
-      format: RGBAFormat
+      type: HalfFloatType
     })
     const texture = renderTarget.texture
     texture.name = 'Coordinate'
-    texture.minFilter = LinearFilter
-    texture.magFilter = LinearFilter
-    texture.generateMipmaps = false
     this.renderTarget = renderTarget
 
     this.textureNode = outputTexture(this, renderTarget.texture)

@@ -135,12 +135,19 @@ type TextureNodeLike = Node & {
   getTextureNode?: () => TextureNode
 }
 
-export function convertToTexture(node: TextureNodeLike): TextureNode
 export function convertToTexture(
-  node?: TextureNodeLike | null
+  node: TextureNodeLike,
+  options?: RenderTargetNodeOptions
+): TextureNode
+
+export function convertToTexture(
+  node?: TextureNodeLike | null,
+  options?: RenderTargetNodeOptions
 ): TextureNode | null
+
 export function convertToTexture(
-  node?: TextureNodeLike | null
+  node?: TextureNodeLike | null,
+  options?: RenderTargetNodeOptions
 ): TextureNode | null {
   if (node == null) {
     return null
@@ -151,7 +158,7 @@ export function convertToTexture(
   } else if (node.getTextureNode != null) {
     textureNode = node.getTextureNode()
   } else {
-    textureNode = new RenderTargetNode(node).getTextureNode()
+    textureNode = new RenderTargetNode(node, options).getTextureNode()
   }
   return textureNode
 }

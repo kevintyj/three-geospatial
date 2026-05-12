@@ -18,14 +18,7 @@
  * Modified from the original source code.
  */
 
-import {
-  Box2,
-  HalfFloatType,
-  LinearFilter,
-  RenderTarget,
-  RGFormat,
-  Vector2
-} from 'three'
+import { Box2, HalfFloatType, RenderTarget, RGFormat, Vector2 } from 'three'
 import type { CSMShadowNode } from 'three/examples/jsm/csm/CSMShadowNode.js'
 import {
   and,
@@ -106,10 +99,6 @@ export class MinMaxLevelsNode extends Node {
       type: HalfFloatType,
       format: RGFormat
     })
-    const rtTexture = renderTarget.texture
-    rtTexture.minFilter = LinearFilter
-    rtTexture.magFilter = LinearFilter
-    rtTexture.generateMipmaps = false
 
     this.renderTargetA = renderTarget
     this.renderTargetA.texture.name = 'MinMaxLevelsA'

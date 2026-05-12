@@ -18,14 +18,7 @@
  * Modified from the original source code.
  */
 
-import {
-  FloatType,
-  LinearFilter,
-  RenderTarget,
-  RGBAFormat,
-  type Vector2,
-  type Vector4
-} from 'three'
+import { FloatType, RenderTarget, type Vector2, type Vector4 } from 'three'
 import { float, Fn, If, max, mix, uint, uv, uvec4, vec2, vec4 } from 'three/tsl'
 import {
   NodeMaterial,
@@ -81,14 +74,10 @@ export class SliceEndpointsNode extends Node {
       depthBuffer: false,
       // TODO: Still not sure why half-float texture computes incorrectly on
       // mobile devices.
-      type: FloatType,
-      format: RGBAFormat
+      type: FloatType
     })
     const texture = renderTarget.texture
     texture.name = 'SliceEndpoints'
-    texture.minFilter = LinearFilter
-    texture.magFilter = LinearFilter
-    texture.generateMipmaps = false
     this.renderTarget = renderTarget
 
     this.textureNode = outputTexture(this, renderTarget.texture)

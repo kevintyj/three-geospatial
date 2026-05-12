@@ -1,16 +1,13 @@
 import {
   DepthTexture,
   HalfFloatType,
-  LinearFilter,
   Matrix4,
   RenderTarget,
-  RGBAFormat,
   Vector2,
   type Camera
 } from 'three'
 import {
   and,
-  convertToTexture,
   float,
   Fn,
   If,
@@ -47,8 +44,9 @@ import { highpVelocity } from './HighpVelocityNode'
 import { haltonOffsets } from './internals'
 import type { Node } from './node'
 import { outputTexture } from './OutputTextureNode'
+import { convertToTexture } from './RenderTargetNode'
 import { logarithmicToPerspectiveDepth } from './transformations'
-import { isWebGPU, hashValues } from './utils'
+import { hashValues, isWebGPU } from './utils'
 
 const { resetRendererState, restoreRendererState } = RendererUtils
 
@@ -292,15 +290,11 @@ export class TemporalAntialiasNode extends TempNode {
   private createRenderTarget(name?: string): RenderTarget {
     const renderTarget = new RenderTarget(1, 1, {
       depthBuffer: false,
-      type: HalfFloatType,
-      format: RGBAFormat
+      type: HalfFloatType
     })
     const texture = renderTarget.texture
-    texture.minFilter = LinearFilter
-    texture.magFilter = LinearFilter
-    texture.generateMipmaps = false
 
-    const typeName = (this.constructor as typeof Node).type
+    const typeName = (this.constructor as typeof Node).type.replace(/Node$/, '')
     texture.name = name != null ? `${typeName}_${name}` : typeName
 
     return renderTarget
@@ -579,7 +573,7 @@ export function temporalAntialias(...args: any[]): any {
       camera: Camera
     ): TemporalAntialiasNode =>
       new TemporalAntialiasNode(
-        convertToTexture(inputNode),
+        convertToTexture(inputNode, { name: 'TemporalAntialias_input' }),
         depthNode,
         velocityNode,
         camera
@@ -587,7 +581,7 @@ export function temporalAntialias(...args: any[]): any {
   }
   const [inputNode, depthNode, velocityNode, camera] = args
   return new TemporalAntialiasNode(
-    convertToTexture(inputNode),
+    convertToTexture(inputNode, { name: 'TemporalAntialias_input' }),
     depthNode,
     velocityNode,
     camera

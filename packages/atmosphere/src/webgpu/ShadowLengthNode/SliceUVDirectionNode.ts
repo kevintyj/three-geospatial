@@ -18,14 +18,7 @@
  * Modified from the original source code.
  */
 
-import {
-  FloatType,
-  LinearFilter,
-  RenderTarget,
-  RGBAFormat,
-  type Camera,
-  type Vector2
-} from 'three'
+import { FloatType, RenderTarget, type Camera, type Vector2 } from 'three'
 import type { CSMShadowNode } from 'three/examples/jsm/csm/CSMShadowNode.js'
 import {
   Fn,
@@ -101,14 +94,10 @@ export class SliceUVDirectionNode extends Node {
       depthBuffer: false,
       // TODO: Still not sure why half-float texture computes incorrectly on
       // mobile devices.
-      type: FloatType,
-      format: RGBAFormat
+      type: FloatType
     })
     const texture = renderTarget.texture
     texture.name = 'SliceUVDirection'
-    texture.minFilter = LinearFilter
-    texture.magFilter = LinearFilter
-    texture.generateMipmaps = false
     this.renderTarget = renderTarget
 
     this.textureNode = outputTexture(this, renderTarget.texture)

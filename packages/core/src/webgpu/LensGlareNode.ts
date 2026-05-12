@@ -9,7 +9,6 @@ import {
 } from 'three'
 import {
   atomicAdd,
-  convertToTexture,
   Fn,
   globalId,
   If,
@@ -40,6 +39,7 @@ import invariant from 'tiny-invariant'
 
 import { FilterNode } from './FilterNode'
 import type { Node } from './node'
+import { convertToTexture } from './RenderTargetNode'
 import { hashValues } from './utils'
 
 const { resetRendererState, restoreRendererState } = RendererUtils
@@ -82,6 +82,10 @@ const instanceStruct = /*#__PURE__*/ struct({
 
 // Based on: https://www.froyok.fr/blog/2021-09-ue4-custom-lens-flare/
 export class LensGlareNode extends FilterNode {
+  static override get type(): string {
+    return 'LensGlareNode'
+  }
+
   spikeNode?: TextureNode | null
   spikePairCount = 6
   wireframe = false
@@ -314,4 +318,4 @@ export class LensGlareNode extends FilterNode {
 }
 
 export const lensGlare = (inputNode: Node | null): LensGlareNode =>
-  new LensGlareNode(inputNode != null ? convertToTexture(inputNode) : null)
+  new LensGlareNode(convertToTexture(inputNode, { name: 'LensGlare_input' }))

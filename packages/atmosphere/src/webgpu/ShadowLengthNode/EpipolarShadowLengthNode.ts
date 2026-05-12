@@ -22,7 +22,6 @@
 
 import {
   HalfFloatType,
-  LinearFilter,
   RenderTarget,
   RGFormat,
   type PerspectiveCamera
@@ -135,9 +134,6 @@ export class EpipolarShadowLengthNode extends Node {
     })
     const texture = renderTarget.texture
     texture.name = 'EpipolarShadowLength'
-    texture.minFilter = LinearFilter
-    texture.magFilter = LinearFilter
-    texture.generateMipmaps = false
     this.renderTarget = renderTarget
 
     this.textureNode = outputTexture(this, renderTarget.texture)
