@@ -87,6 +87,8 @@ export class LongExposureNode extends TempNode {
   constructor(inputNode: TextureNode) {
     super('vec4')
     this.updateBeforeType = NodeUpdateType.FRAME
+    this.material.name = 'LongExposure'
+    this.mesh.name = 'LongExposure'
 
     this.inputNode = inputNode
 
@@ -166,13 +168,15 @@ export class LongExposureNode extends TempNode {
       If(luminance(input.rgb).greaterThanEqual(luminance(previous.rgb)), () => {
         textureStore(this.timerTexture, globalId.xy, time)
       })
-    })().compute(
-      // @ts-expect-error "count" can be dimensional
-      [Math.ceil(width / 8), Math.ceil(height / 8), 1],
-      [8, 8, 1]
-    )
+    })()
+      .computeKernel([8, 8, 1])
+      .setName('LongExposure')
 
-    void renderer.compute(this.computeNode)
+    void renderer.compute(this.computeNode, [
+      Math.ceil(width / 8),
+      Math.ceil(height / 8),
+      1
+    ])
 
     renderer.setRenderTarget(this.currentRT)
     this.mesh.material = this.material
