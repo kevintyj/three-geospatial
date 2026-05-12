@@ -101,19 +101,22 @@ export class MipmapBlurNode extends DualMipmapFilterNode {
     return 'MipmapBlurNode'
   }
 
+  override resolutionScale = 0.5
+
   constructor(inputNode?: TextureNode | null, levels = 4) {
     super(inputNode, levels)
-    this.resolutionScale = 0.5
   }
 
   protected override setupDownsampleNode(builder: NodeBuilder): Node {
-    invariant(this.inputNode != null)
-    return mipmapBlurDownsample(this.inputNode, this.inputTexelSize)
+    const { inputNode } = this
+    invariant(inputNode != null, 'inputNode cannot be null during setup.')
+    return mipmapBlurDownsample(inputNode, this.inputTexelSize)
   }
 
   protected override setupUpsampleNode(builder: NodeBuilder): Node {
-    invariant(this.inputNode != null)
-    return mipmapBlurUpsample(this.inputNode, this.inputTexelSize)
+    const { inputNode } = this
+    invariant(inputNode != null, 'inputNode cannot be null during setup.')
+    return mipmapBlurUpsample(inputNode, this.inputTexelSize)
   }
 }
 

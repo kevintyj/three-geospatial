@@ -1,10 +1,5 @@
-import { add, convertToTexture, Fn, rtt, uniform } from 'three/tsl'
-import {
-  TempNode,
-  type NodeBuilder,
-  type RTTNode,
-  type TextureNode
-} from 'three/webgpu'
+import { add, Fn, uniform } from 'three/tsl'
+import { TempNode, type NodeBuilder, type TextureNode } from 'three/webgpu'
 import invariant from 'tiny-invariant'
 
 import { DownsampleThresholdNode } from './DownsampleThresholdNode'
@@ -14,6 +9,11 @@ import { LensGlareNode } from './LensGlareNode'
 import { LensHaloNode } from './LensHaloNode'
 import { MipmapSurfaceBlurNode } from './MipmapSurfaceBlurNode'
 import type { Node } from './node'
+import {
+  convertToTexture,
+  renderTarget,
+  type RenderTargetNode
+} from './RenderTargetNode'
 import { isWebGPU } from './utils'
 
 export class LensFlareNode extends TempNode {
@@ -31,7 +31,7 @@ export class LensFlareNode extends TempNode {
 
   bloomIntensity = uniform(0.05)
 
-  featuresNode: RTTNode
+  featuresNode: RenderTargetNode
 
   constructor(inputNode?: TextureNode | null) {
     super('vec4')
@@ -44,14 +44,14 @@ export class LensFlareNode extends TempNode {
     this.bloomNode = new MipmapSurfaceBlurNode(null, 8)
     this.glareNode = new LensGlareNode()
 
-    this.featuresNode = rtt(add(this.ghostNode, this.haloNode))
-    this.featuresNode.value.name = 'LensFlare_features'
-    this.featuresNode.pixelRatio = 0.5
+    this.featuresNode = renderTarget(add(this.ghostNode, this.haloNode), {
+      name: 'LensFlare_features',
+      resolutionScale: 0.5
+    })
 
     // Use the full resolution because the thresholdNode already downsamples the
     // input texture.
     this.blurNode.resolutionScale = 1
-    this.bloomNode.resolutionScale = 1
     this.glareNode.resolutionScale = 1
   }
 
@@ -70,6 +70,7 @@ export class LensFlareNode extends TempNode {
 
     const threshold = thresholdNode.getTextureNode()
     const blur = blurNode.getTextureNode()
+    const features = featuresNode.getTextureNode()
 
     // input → threshold → blur → ghost
     // input → threshold → blur → halo
@@ -78,8 +79,8 @@ export class LensFlareNode extends TempNode {
     ghostNode.inputNode = blur
     haloNode.inputNode = blur
 
-    // input → threshold → bloom
-    bloomNode.inputNode = threshold
+    // input → bloom
+    bloomNode.inputNode = inputNode
 
     // input → threshold → glare
     glareNode.inputNode = threshold
@@ -95,7 +96,7 @@ export class LensFlareNode extends TempNode {
       if (isWebGPU(builder)) {
         output.addAssign(glare)
       }
-      return output.add(featuresNode)
+      return output.add(features)
     })()
   }
 
@@ -112,4 +113,4 @@ export class LensFlareNode extends TempNode {
 }
 
 export const lensFlare = (inputNode: Node | null): LensFlareNode =>
-  new LensFlareNode(inputNode != null ? convertToTexture(inputNode) : null)
+  new LensFlareNode(convertToTexture(inputNode, { name: 'LensFlare_input' }))

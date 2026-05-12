@@ -9,18 +9,18 @@ export class LensGhostNode extends TempNode {
     return 'LensGhostNode'
   }
 
-  inputNode?: TextureNode | null
+  inputNode: TextureNode | null
 
   intensity = uniform(1e-5)
 
   constructor(inputNode?: TextureNode | null) {
     super('vec3')
-    this.inputNode = inputNode
+    this.inputNode = inputNode ?? null
   }
 
   override setup(builder: NodeBuilder): unknown {
     const { inputNode, intensity } = this
-    invariant(inputNode != null)
+    invariant(inputNode != null, 'inputNode cannot be null during setup.')
 
     const sampleGhost = FnLayout({
       name: 'sampleGhost',

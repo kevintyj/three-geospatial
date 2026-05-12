@@ -55,6 +55,7 @@ declare module 'three/webgpu' {
   interface NodeBuilder {
     camera?: Camera
     context: NodeBuilderContext
+    getSharedContext(): NodeBuilderContext
   }
 
   interface Node {

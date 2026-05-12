@@ -7,19 +7,19 @@ import {
   positionView,
   remapClamp,
   screenCoordinate,
-  screenUV,
   vec2,
   vec3,
   vec4,
   viewportDepthTexture,
-  viewportSharedTexture
+  viewportSharedTexture,
+  viewportUV
 } from 'three/tsl'
 import { TempNode, type NodeBuilder, type TextureNode } from 'three/webgpu'
 
 import {
   depthToViewZ,
-  inverseProjectionMatrix,
   hashValues,
+  inverseProjectionMatrix,
   projectionMatrix,
   rayEllipsoidIntersection,
   screenToPositionView,
@@ -131,7 +131,8 @@ export class AerialPerspectiveNode extends TempNode {
     const getSurfacePositionUnit = (): Node<'vec3'> => {
       const viewZ = depthToViewZ(depth, camera)
       const positionView = screenToPositionView(
-        screenUV,
+        // TODO: Investigate why screenUV becomes incorrect.
+        viewportUV,
         depth,
         viewZ,
         projectionMatrix(camera),

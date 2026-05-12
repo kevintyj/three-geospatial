@@ -26,8 +26,11 @@ const dataDimension = 256
 
 const canvas = new OffscreenCanvas(tileDimension, tileDimension)
 const context = canvas.getContext('2d') as unknown as CanvasRenderingContext2D
+
+// Flip Y here, as we use transferToImageBitmap().
 const scale = tileDimension / dataDimension
-context.scale(scale, scale)
+context.translate(0, tileDimension)
+context.scale(scale, -scale)
 
 const streetLineWidthAtLevel14: Record<string, number | undefined> = {
   motorway: 3,
@@ -340,11 +343,7 @@ export async function computeWaterAreaTileImage(
     const preparedTileMap = new Map([['', [preparedTile]]])
     paint(context, z, preparedTileMap, null, paintRules, bbox, origin, false)
 
-    const image = await createImageBitmap(canvas, {
-      premultiplyAlpha: 'none',
-      colorSpaceConversion: 'none',
-      imageOrientation: 'flipY'
-    })
+    const image = canvas.transferToImageBitmap()
 
     return Transfer({ image }, [image])
   } catch (error) {

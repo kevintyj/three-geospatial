@@ -15,14 +15,12 @@ import {
 import {
   FloatType,
   HalfFloatType,
-  LinearFilter,
   NodeMaterial,
   NodeUpdateType,
   QuadMesh,
   RedFormat,
   RendererUtils,
   RenderTarget,
-  RGBAFormat,
   StorageTexture,
   TempNode,
   Vector2,
@@ -42,14 +40,10 @@ const { resetRendererState, restoreRendererState } = RendererUtils
 function createRenderTarget(name: string): RenderTarget {
   const renderTarget = new RenderTarget(1, 1, {
     depthBuffer: false,
-    type: HalfFloatType,
-    format: RGBAFormat
+    type: HalfFloatType
   })
   const texture = renderTarget.texture
-  texture.minFilter = LinearFilter
-  texture.magFilter = LinearFilter
-  texture.generateMipmaps = false
-  texture.name = `LongExposureNode.${name}`
+  texture.name = `LongExposure_${name}`
   return renderTarget
 }
 
@@ -57,10 +51,7 @@ function createStorageTexture(name: string): StorageTexture {
   const texture = new StorageTexture(1, 1)
   texture.type = FloatType
   texture.format = RedFormat
-  texture.minFilter = LinearFilter
-  texture.magFilter = LinearFilter
-  texture.generateMipmaps = false
-  texture.name = `LongExposureNode.${name}`
+  texture.name = `LongExposure_${name}`
   return texture
 }
 
@@ -220,4 +211,5 @@ export class LongExposureNode extends TempNode {
 }
 
 export const longExposure = (inputNode: Node): LongExposureNode =>
+  // TODO: Cannot use our convertToTexture.
   new LongExposureNode(convertToTexture(inputNode))

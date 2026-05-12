@@ -29,7 +29,7 @@ export class LensHaloNode extends TempNode {
     return 'LensHaloNode'
   }
 
-  inputNode?: TextureNode | null
+  inputNode: TextureNode | null
 
   intensity = uniform(1e-5)
   chromaticAberration = uniform(0.005)
@@ -40,7 +40,7 @@ export class LensHaloNode extends TempNode {
     super('vec3')
     this.updateBeforeType = NodeUpdateType.FRAME
 
-    this.inputNode = inputNode
+    this.inputNode = inputNode ?? null
   }
 
   override updateBefore({ renderer }: NodeFrame): void {
@@ -53,7 +53,7 @@ export class LensHaloNode extends TempNode {
 
   override setup(builder: NodeBuilder): unknown {
     const { inputNode, intensity, chromaticAberration, aspectRatio } = this
-    invariant(inputNode != null)
+    invariant(inputNode != null, 'inputNode cannot be null during setup.')
 
     const cubicRingMask = FnLayout({
       name: 'cubicRingMask',

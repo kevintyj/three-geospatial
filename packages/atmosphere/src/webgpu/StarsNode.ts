@@ -2,8 +2,6 @@ import {
   AdditiveBlending,
   HalfFloatType,
   InstancedBufferAttribute,
-  LinearFilter,
-  RGBAFormat,
   Sprite,
   Vector2,
   type BufferAttribute,
@@ -50,13 +48,9 @@ const { resetRendererState, restoreRendererState } = RendererUtils
 function createRenderTarget(): RenderTarget {
   const renderTarget = new RenderTarget(1, 1, {
     depthBuffer: false,
-    type: HalfFloatType,
-    format: RGBAFormat
+    type: HalfFloatType
   })
   const texture = renderTarget.texture
-  texture.minFilter = LinearFilter
-  texture.magFilter = LinearFilter
-  texture.generateMipmaps = false
   texture.name = 'Stars'
   return renderTarget
 }

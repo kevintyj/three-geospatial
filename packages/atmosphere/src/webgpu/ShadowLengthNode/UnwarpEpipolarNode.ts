@@ -20,7 +20,6 @@
 
 import {
   HalfFloatType,
-  LinearFilter,
   RenderTarget,
   RGFormat,
   type Camera,
@@ -93,9 +92,6 @@ export class UnwarpEpipolarNode extends Node {
     })
     const texture = renderTarget.texture
     texture.name = 'UnwarpEpipolar'
-    texture.minFilter = LinearFilter
-    texture.magFilter = LinearFilter
-    texture.generateMipmaps = false
     this.renderTarget = renderTarget
 
     this.textureNode = outputTexture(this, renderTarget.texture)
