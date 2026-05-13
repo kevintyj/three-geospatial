@@ -203,10 +203,10 @@ const Content: FC<StoryProps> = () => {
       >
         <orthographicCamera
           attach='shadow-camera'
-          top={4}
-          bottom={-4}
-          left={-4}
-          right={4}
+          top={5}
+          bottom={-5}
+          left={-5}
+          right={5}
           near={0}
           far={600}
         />
