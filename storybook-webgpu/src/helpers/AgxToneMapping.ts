@@ -95,8 +95,8 @@ export const agxPunchyToneMapping = FnLayout({
   value.assign(
     cdl(
       value,
-      vec3(1), //slope
-      vec3(0), //offset
+      vec3(1), // slope
+      vec3(0), // offset
       vec3(1.35), // power
       // Also the saturation of 1.4 is just too much.
       float(1.2) // saturation
