@@ -1,7 +1,7 @@
 import { extend, useThree, type ThreeElement } from '@react-three/fiber'
 import { TilesPlugin, TilesRenderer } from '3d-tiles-renderer/r3f'
 import { useLayoutEffect, useMemo, useState, type FC } from 'react'
-import { AgXToneMapping, BackSide, Scene } from 'three'
+import { BackSide, Scene } from 'three'
 import { context, mrt, output, pass, toneMapping, uniform } from 'three/tsl'
 import {
   MeshBasicNodeMaterial,
@@ -61,6 +61,7 @@ import {
   useToneMappingControls,
   type ToneMappingArgs
 } from '../controls/toneMappingControls'
+import { AgXPunchyToneMapping } from '../helpers/AgxToneMapping'
 import { useControl } from '../hooks/useControl'
 import { useGuardedFrame } from '../hooks/useGuardedFrame'
 import { usePointOfView, type PointOfViewProps } from '../hooks/usePointOfView'
@@ -147,7 +148,7 @@ const Content: FC<StoryProps> = ({
   const lensFlareNode = useResource(() => lensFlare(aerialNode), [aerialNode])
 
   const toneMappingNode = useResource(
-    () => toneMapping(AgXToneMapping, uniform(0), lensFlareNode),
+    () => toneMapping(AgXPunchyToneMapping, uniform(0), lensFlareNode),
     [lensFlareNode]
   )
 

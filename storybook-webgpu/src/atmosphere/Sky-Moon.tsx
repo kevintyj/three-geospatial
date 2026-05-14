@@ -28,7 +28,6 @@ import {
   type ReactNode
 } from 'react'
 import {
-  AgXToneMapping,
   BufferGeometry,
   Line,
   Matrix4,
@@ -88,6 +87,7 @@ import {
   useToneMappingControls,
   type ToneMappingArgs
 } from '../controls/toneMappingControls'
+import { AgXPunchyToneMapping } from '../helpers/AgxToneMapping'
 import { useCombinedChange } from '../hooks/useCombinedChange'
 import { useControl } from '../hooks/useControl'
 import { useGuardedFrame } from '../hooks/useGuardedFrame'
@@ -308,7 +308,7 @@ const Content: FC<StoryProps> = () => {
   const lensFlareNode = useResource(() => lensFlare(skyNode), [skyNode])
 
   const toneMappingNode = useResource(
-    () => toneMapping(AgXToneMapping, uniform(1), lensFlareNode),
+    () => toneMapping(AgXPunchyToneMapping, uniform(0), lensFlareNode),
     [lensFlareNode]
   )
 

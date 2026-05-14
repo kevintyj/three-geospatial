@@ -1,7 +1,6 @@
 import { Environment, OrbitControls } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { Suspense, type FC } from 'react'
-import { AgXToneMapping } from 'three'
 import { pass, toneMapping, uniform } from 'three/tsl'
 import { RenderPipeline, type Renderer } from 'three/webgpu'
 
@@ -17,6 +16,7 @@ import {
   useToneMappingControls,
   type ToneMappingArgs
 } from '../controls/toneMappingControls'
+import { AgXPunchyToneMapping } from '../helpers/AgxToneMapping'
 import { useGuardedFrame } from '../hooks/useGuardedFrame'
 import { useResource } from '../hooks/useResource'
 import { useTransientControl } from '../hooks/useTransientControl'
@@ -36,7 +36,7 @@ const Content: FC<StoryProps> = () => {
   const lensFlareNode = useResource(() => lensFlare(colorNode), [colorNode])
 
   const toneMappingNode = useResource(
-    () => toneMapping(AgXToneMapping, uniform(0), lensFlareNode),
+    () => toneMapping(AgXPunchyToneMapping, uniform(0), lensFlareNode),
     [lensFlareNode]
   )
 

@@ -3,7 +3,6 @@ import { extend, useThree, type ThreeElement } from '@react-three/fiber'
 import { useLayoutEffect, type FC } from 'react'
 import { context, float, pass, toneMapping, uniform } from 'three/tsl'
 import {
-  AgXToneMapping,
   DoubleSide,
   MeshPhysicalNodeMaterial,
   RenderPipeline,
@@ -45,6 +44,7 @@ import {
   useToneMappingControls,
   type ToneMappingArgs
 } from '../controls/toneMappingControls'
+import { AgXPunchyToneMapping } from '../helpers/AgxToneMapping'
 import { useGuardedFrame } from '../hooks/useGuardedFrame'
 import { useResource } from '../hooks/useResource'
 import { useTransientControl } from '../hooks/useTransientControl'
@@ -98,7 +98,7 @@ const Content: FC<StoryProps> = () => {
   const lensFlareNode = useResource(() => lensFlare(passNode), [passNode])
 
   const toneMappingNode = useResource(
-    () => toneMapping(AgXToneMapping, uniform(0), lensFlareNode),
+    () => toneMapping(AgXPunchyToneMapping, uniform(0), lensFlareNode),
     [lensFlareNode]
   )
 

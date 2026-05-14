@@ -1,5 +1,4 @@
 import {
-  AgXToneMapping,
   Group,
   Mesh,
   PerspectiveCamera,
@@ -36,6 +35,7 @@ import {
 } from '@takram/three-geospatial/webgpu'
 
 import type { StoryFC } from '../components/createStory'
+import { AgXPunchyToneMapping } from '../helpers/AgxToneMapping'
 
 // Geospatial configurations:
 const date = new Date('2000-06-01T10:00:00Z')
@@ -123,7 +123,7 @@ async function init(container: HTMLDivElement): Promise<() => void> {
   const depthNode = passNode.getTextureNode('depth')
   const velocityNode = passNode.getTextureNode('velocity')
   const lensFlareNode = lensFlare(colorNode)
-  const toneMappingNode = toneMapping(AgXToneMapping, 3, lensFlareNode)
+  const toneMappingNode = toneMapping(AgXPunchyToneMapping, 3, lensFlareNode)
   const taaNode = temporalAntialias(
     toneMappingNode,
     depthNode,

@@ -49,9 +49,9 @@ export const Globe: FC<GlobeProps> = ({
       tiles.lruCache.maxSize = 24000
       tiles.lruCache.maxBytesSize = 1.6 * GIGABYTE_BYTES
     } else {
-      // TilesRenderer's default settings:
-      tiles.errorTarget = 12
-      tiles.lruCache.maxSize = 6000
+      // TilesRenderer's default settings with useRecommendedSettings enabled:
+      tiles.errorTarget = 20
+      tiles.lruCache.maxSize = 8000
       tiles.lruCache.maxBytesSize = 0.4 * GIGABYTE_BYTES
     }
   }, [tiles, useHighQualitySettings])

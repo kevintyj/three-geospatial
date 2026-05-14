@@ -1,6 +1,6 @@
 import { extend, useThree, type ThreeElement } from '@react-three/fiber'
 import { useLayoutEffect, useMemo, type FC, type ReactNode } from 'react'
-import { AgXToneMapping, Scene } from 'three'
+import { Scene } from 'three'
 import { context, mrt, output, pass, toneMapping, uniform } from 'three/tsl'
 import { RenderPipeline, type NodeMaterial, type Renderer } from 'three/webgpu'
 
@@ -52,6 +52,7 @@ import {
   useToneMappingControls,
   type ToneMappingArgs
 } from '../controls/toneMappingControls'
+import { AgXPunchyToneMapping } from '../helpers/AgxToneMapping'
 import { useControl } from '../hooks/useControl'
 import { useGuardedFrame } from '../hooks/useGuardedFrame'
 import { usePointOfView, type PointOfViewProps } from '../hooks/usePointOfView'
@@ -125,7 +126,7 @@ const Content: FC<StoryProps> = ({
   const lensFlareNode = useResource(() => lensFlare(aerialNode), [aerialNode])
 
   const toneMappingNode = useResource(
-    () => toneMapping(AgXToneMapping, uniform(0), lensFlareNode),
+    () => toneMapping(AgXPunchyToneMapping, uniform(0), lensFlareNode),
     [lensFlareNode]
   )
 

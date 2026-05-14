@@ -1,7 +1,6 @@
 import { OrbitControls } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useLayoutEffect, useRef, type FC } from 'react'
-import { AgXToneMapping } from 'three'
 import { context, toneMapping, uniform } from 'three/tsl'
 import { RenderPipeline, type Renderer } from 'three/webgpu'
 
@@ -33,6 +32,7 @@ import {
   useToneMappingControls,
   type ToneMappingArgs
 } from '../controls/toneMappingControls'
+import { AgXPunchyToneMapping } from '../helpers/AgxToneMapping'
 import { longExposure } from '../helpers/LongExposureNode'
 import { useGuardedFrame } from '../hooks/useGuardedFrame'
 import { useResource } from '../hooks/useResource'
@@ -63,7 +63,7 @@ const Content: FC<StoryProps> = () => {
   const lensFlareNode = useResource(() => lensFlare(skyNode), [skyNode])
 
   const toneMappingNode = useResource(
-    () => toneMapping(AgXToneMapping, uniform(0), lensFlareNode),
+    () => toneMapping(AgXPunchyToneMapping, uniform(0), lensFlareNode),
     [lensFlareNode]
   )
 

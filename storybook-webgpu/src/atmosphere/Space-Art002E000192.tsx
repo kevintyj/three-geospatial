@@ -1,7 +1,7 @@
 import { OrbitControls } from '@react-three/drei'
 import { extend, useThree, type ThreeElement } from '@react-three/fiber'
 import { useLayoutEffect, useMemo, type FC } from 'react'
-import { AgXToneMapping, Vector3 } from 'three'
+import { Vector3 } from 'three'
 import {
   context,
   Fn,
@@ -68,6 +68,7 @@ import {
   useToneMappingControls,
   type ToneMappingArgs
 } from '../controls/toneMappingControls'
+import { AgXPunchyToneMapping } from '../helpers/AgxToneMapping'
 import { useGuardedFrame } from '../hooks/useGuardedFrame'
 import { useResource } from '../hooks/useResource'
 import { useSpringControl } from '../hooks/useSpringControl'
@@ -152,7 +153,7 @@ const Content: FC<StoryProps> = () => {
   lensFlareNode.bloomIntensity.value = 0.3
 
   const toneMappingNode = useResource(
-    () => toneMapping(AgXToneMapping, uniform(0), lensFlareNode),
+    () => toneMapping(AgXPunchyToneMapping, uniform(0), lensFlareNode),
     [lensFlareNode]
   )
 

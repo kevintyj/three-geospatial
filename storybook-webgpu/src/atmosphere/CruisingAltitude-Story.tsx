@@ -7,7 +7,7 @@ import {
 } from '@react-three/fiber'
 import { TilesPlugin } from '3d-tiles-renderer/r3f'
 import { Suspense, useLayoutEffect, useRef, useState, type FC } from 'react'
-import { AgXToneMapping, Vector3, type Object3D } from 'three'
+import { Vector3, type Object3D } from 'three'
 import { context, mrt, output, pass, toneMapping, uniform } from 'three/tsl'
 import { RenderPipeline, type Renderer } from 'three/webgpu'
 
@@ -59,6 +59,7 @@ import {
   useToneMappingControls,
   type ToneMappingArgs
 } from '../controls/toneMappingControls'
+import { AgXPunchyToneMapping } from '../helpers/AgxToneMapping'
 import { useGuardedFrame } from '../hooks/useGuardedFrame'
 import { useResource } from '../hooks/useResource'
 import { useSpringControl } from '../hooks/useSpringControl'
@@ -114,7 +115,7 @@ const Content: FC<StoryProps> = () => {
   const lensFlareNode = useResource(() => lensFlare(aerialNode), [aerialNode])
 
   const toneMappingNode = useResource(
-    () => toneMapping(AgXToneMapping, uniform(0), lensFlareNode),
+    () => toneMapping(AgXPunchyToneMapping, uniform(0), lensFlareNode),
     [lensFlareNode]
   )
 

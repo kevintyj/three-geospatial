@@ -14,7 +14,7 @@ import {
   type FC,
   type ReactNode
 } from 'react'
-import { AgXToneMapping, Scene } from 'three'
+import { Scene } from 'three'
 import {
   bool,
   context,
@@ -84,6 +84,7 @@ import {
   useToneMappingControls,
   type ToneMappingArgs
 } from '../controls/toneMappingControls'
+import { AgXPunchyToneMapping } from '../helpers/AgxToneMapping'
 import { useControl } from '../hooks/useControl'
 import { useGuardedFrame } from '../hooks/useGuardedFrame'
 import { usePointOfView, type PointOfViewProps } from '../hooks/usePointOfView'
@@ -196,7 +197,7 @@ const Content: FC<StoryProps> = ({
   const lensFlareNode = useResource(() => lensFlare(aerialNode), [aerialNode])
 
   const toneMappingNode = useResource(
-    () => toneMapping(AgXToneMapping, uniform(0), lensFlareNode),
+    () => toneMapping(AgXPunchyToneMapping, uniform(0), lensFlareNode),
     [lensFlareNode]
   )
 
